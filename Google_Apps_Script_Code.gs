@@ -1,17 +1,18 @@
 /**
- * BLSTCS.RU - Google Apps Script для синхронизации расчетов баллистики и базы пользователей (v3.5)
+ * BLSTCS.RU - Google Apps Script для синхронизации расчетов баллистики, базы пользователей и настроек (v3.6)
  * Таблица: "Расчет баллистики" (https://docs.google.com/spreadsheets/d/1QsGYXKAYsQOCguMVwBq-BhCaeRhzL33YVekkr49RYM8/edit)
  * Веб-приложение: https://script.google.com/macros/s/AKfycbxGn3R0uG1EJdR3lWs_zJrjhxk_v4SDr_sGdHiOGk-6Q5jJM5M8gEa0FFejOobHnQAN/exec
  * 
  * ВАЖНО ПРИ ОБНОВЛЕНИИ СКРИПТА:
  * 1. "Развернуть" (Deploy) -> "Управление развертываниями" (Manage deployments).
- * 2. Нажмите карандаш (Редактировать).
+ * 2. Нажмите иконку карандаша (Редактировать).
  * 3. В поле "Версия" выберите: "Новая версия" (New version).
  * 4. Нажмите "Развернуть" (Deploy).
  */
 
 var SHEET_HISTORY = 'История расчетов';
 var SHEET_USERS = 'Пользователи';
+var SHEET_SETTINGS = 'Настройки';
 
 // ================= GET ЗАПРОСЫ =================
 function doGet(e) {
@@ -24,12 +25,14 @@ function doGet(e) {
     if (action === 'ping') {
       var histSheet = getOrCreateHistorySheet(ss);
       var userSheet = getOrCreateUsersSheet(ss);
+      var setSheet = getOrCreateSettingsSheet(ss);
       return jsonResponse({
         status: 'ok',
-        message: 'BLSTCS Google Sheets API v3.5 подключено успешно!',
+        message: 'BLSTCS Google Sheets API v3.6 подключено успешно!',
         spreadsheet: ss.getName(),
         history_rows: Math.max(0, histSheet.getLastRow() - 1),
         users_count: Math.max(0, userSheet.getLastRow() - 1),
+        has_settings: setSheet.getLastRow() > 1,
         time: new Date().toISOString()
       }, p.callback);
     }
@@ -41,7 +44,18 @@ function doGet(e) {
       return jsonResponse(res, p.callback);
     }
 
-    // 3. Получение истории расчетов (Download History)
+    // 3. Получение настроек справочников (Get Settings)
+    if (action === 'get_settings') {
+      var sSheet = getOrCreateSettingsSheet(ss);
+      var settings = readSettingsFromSheet(sSheet);
+      return jsonResponse({
+        status: 'ok',
+        settings: settings,
+        updated_at: new Date().toISOString()
+      }, p.callback);
+    }
+
+    // 4. Получение истории расчетов (Download History)
     if (action === 'get_history') {
       var sheet = getOrCreateHistorySheet(ss);
       var data = sheet.getDataRange().getValues();
@@ -78,7 +92,7 @@ function doGet(e) {
       return jsonResponse({ status: 'ok', count: rows.length, data: rows }, p.callback);
     }
 
-    // 4. Получение списка аккаунтов (для администратора)
+    // 5. Получение списка пользователей (для администратора)
     if (action === 'get_users') {
       var uSheet2 = getOrCreateUsersSheet(ss);
       var uData = uSheet2.getDataRange().getValues();
@@ -181,14 +195,21 @@ function doPost(e) {
       });
     }
 
-    // 2. Проверка пользователя через POST
+    // 2. Сохранение настроек в лист "Настройки" (Save Settings)
+    if (action === 'save_settings') {
+      var setSheet = getOrCreateSettingsSheet(ss);
+      var resSettings = writeSettingsToSheet(setSheet, payload.settings);
+      return jsonResponse(resSettings);
+    }
+
+    // 3. Проверка пользователя через POST
     if (action === 'verify_user') {
       var userSheet = getOrCreateUsersSheet(ss);
       var res2 = verifyUserInSheet(userSheet, payload.login, payload.password, payload.password_hash);
       return jsonResponse(res2);
     }
 
-    // 3. Создание / обновление пользователя в листе "Пользователи"
+    // 4. Создание / обновление пользователя в листе "Пользователи"
     if (action === 'save_user') {
       var userSheet2 = getOrCreateUsersSheet(ss);
       var rows2 = userSheet2.getDataRange().getValues();
@@ -233,6 +254,166 @@ function doPost(e) {
   }
 }
 
+// ================= ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =================
+
+// Чтение настроек из листа "Настройки"
+function readSettingsFromSheet(sheet) {
+  var data = sheet.getDataRange().getValues();
+  if (data.length <= 1) return null;
+
+  // Проверяем наличие служебной ячейки Z1 с полным JSON (если есть)
+  try {
+    var rawJson = sheet.getRange(1, 26).getValue();
+    if (rawJson && rawJson.toString().trim().startsWith('{')) {
+      return JSON.parse(rawJson);
+    }
+  } catch (e) {}
+
+  // Иначе разбираем строки листа
+  var s = {
+    general: {
+      pet_price_per_m2: 389.76,
+      work_price_per_part: 200.0,
+      aramid_paper_price_per_m2: 38.46,
+      aramid_edging_price_per_m: 5.0,
+      svmp_default_multiplier: 3.3,
+      aramid_default_multiplier: 2.625
+    },
+    materials: [],
+    allowed_layers: [],
+    covers: [],
+    accessories: [],
+    stickers: []
+  };
+
+  for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+    var cat = (row[0] || '').toString().trim();
+    var code = (row[1] || '').toString().trim();
+    var name = (row[2] || '').toString().trim();
+    var val = parseFloat(row[3]) || 0;
+    var unit = (row[4] || '').toString().trim();
+    var extra = (row[5] || '').toString().trim();
+
+    if (cat === 'Общие нормативы') {
+      if (code === 'pet_price_per_m2') s.general.pet_price_per_m2 = val;
+      else if (code === 'work_price_per_part') s.general.work_price_per_part = val;
+      else if (code === 'aramid_paper_price_per_m2') s.general.aramid_paper_price_per_m2 = val;
+      else if (code === 'aramid_edging_price_per_m') s.general.aramid_edging_price_per_m = val;
+      else if (code === 'svmp_default_multiplier') s.general.svmp_default_multiplier = val;
+      else if (code === 'aramid_default_multiplier') s.general.aramid_default_multiplier = val;
+    } else if (cat === 'Баллистика и слои') {
+      var defect = 3.0;
+      var layers = [20, 25, 30, 40];
+      if (extra) {
+        var mDefect = extra.match(/Брак:\s*([\d\.]+)%/i);
+        if (mDefect) defect = parseFloat(mDefect[1]) || 3.0;
+        var mLayers = extra.match(/Слои:\s*([\d\s,]+)/i);
+        if (mLayers) {
+          layers = mLayers[1].split(',').map(function(x) { return parseInt(x.trim()); }).filter(function(n) { return !isNaN(n) && n > 0; });
+        }
+      }
+      s.materials.push({ code: code, name: name, unit: 'м²', price_per_m2: val, defect_pct: defect });
+      s.allowed_layers.push({ name: name, layers: layers });
+    } else if (cat === 'Ткани чехла') {
+      var aMarkup = 5.0, dMarkup = 2.0;
+      if (extra) {
+        var ma = extra.match(/площадь:\s*([\d\.]+)%/i);
+        if (ma) aMarkup = parseFloat(ma[1]) || 5.0;
+        var md = extra.match(/брак:\s*([\d\.]+)%/i);
+        if (md) dMarkup = parseFloat(md[1]) || 2.0;
+      }
+      s.covers.push({ code: code, name: name, price_per_m2: val, area_markup_pct: aMarkup, defect_markup_pct: dMarkup });
+    } else if (cat === 'Фурнитура') {
+      s.accessories.push({ code: code, name: name, unit: unit || 'шт', price: val });
+    } else if (cat === 'Наклейки') {
+      s.stickers.push({ code: code, name: name, price: val });
+    }
+  }
+
+  return s;
+}
+
+// Запись настроек в лист "Настройки"
+function writeSettingsToSheet(sheet, settings) {
+  if (!settings) return { status: 'error', message: 'Настройки не переданы' };
+
+  sheet.clear();
+  var headers = [
+    'Категория',
+    'Параметр / Код',
+    'Наименование',
+    'Значение / Цена (руб)',
+    'Ед. изм.',
+    'Дополнительные параметры (брак %, наценки, слои)'
+  ];
+  sheet.appendRow(headers);
+
+  var headerRange = sheet.getRange(1, 1, 1, headers.length);
+  headerRange.setBackground('#1e293b');
+  headerRange.setFontColor('#f8fafc');
+  headerRange.setFontWeight('bold');
+  headerRange.setHorizontalAlignment('center');
+  sheet.setFrozenRows(1);
+
+  var rows = [];
+
+  // 1. Общие нормативы
+  if (settings.general) {
+    var g = settings.general;
+    rows.push(['Общие нормативы', 'pet_price_per_m2', '1 лист ПЭТ', g.pet_price_per_m2 || 389.76, 'руб/м²', '']);
+    rows.push(['Общие нормативы', 'work_price_per_part', 'Стоимость работы за деталь', g.work_price_per_part || 200.0, 'руб/деталь', '']);
+    rows.push(['Общие нормативы', 'aramid_paper_price_per_m2', 'Бумага на арамид', g.aramid_paper_price_per_m2 || 38.46, 'руб/м²', '']);
+    rows.push(['Общие нормативы', 'aramid_edging_price_per_m', 'Окантовка на арамид', g.aramid_edging_price_per_m || 5.0, 'руб/м', '']);
+    rows.push(['Общие нормативы', 'svmp_default_multiplier', 'Базовая наценка СВМПэ', g.svmp_default_multiplier || 3.3, 'коэфф.', '']);
+    rows.push(['Общие нормативы', 'aramid_default_multiplier', 'Базовая наценка Арамид', g.aramid_default_multiplier || 2.625, 'коэфф.', '']);
+  }
+
+  // 2. Баллистика и слои
+  var mats = settings.materials || [];
+  var layersList = settings.allowed_layers || [];
+
+  mats.forEach(function(m) {
+    var lObj = null;
+    if (Array.isArray(layersList)) {
+      lObj = layersList.find(function(x) { return x.name === m.name; });
+    } else if (layersList[m.name]) {
+      lObj = { name: m.name, layers: layersList[m.name] };
+    }
+    var lStr = lObj ? lObj.layers.join(', ') : '20, 25, 30, 40';
+    rows.push(['Баллистика и слои', m.code || m.name, m.name, m.price_per_m2, 'руб/м²', 'Брак: ' + (m.defect_pct || 3) + '% | Слои: ' + lStr]);
+  });
+
+  // 3. Ткани чехла
+  (settings.covers || []).forEach(function(c) {
+    rows.push(['Ткани чехла', c.code || c.name, c.name, c.price_per_m2, 'руб/м²', 'Наценка на площадь: ' + (c.area_markup_pct || 5) + '% | Брак: ' + (c.defect_markup_pct || 2) + '%']);
+  });
+
+  // 4. Фурнитура
+  (settings.accessories || []).forEach(function(a) {
+    rows.push(['Фурнитура', a.code || a.name, a.name, a.price, a.unit || 'шт', '']);
+  });
+
+  // 5. Наклейки
+  (settings.stickers || []).forEach(function(s) {
+    rows.push(['Наклейки', s.code, s.name, s.price, 'шт', '']);
+  });
+
+  if (rows.length > 0) {
+    sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
+  }
+
+  // Записываем чистый JSON настроек в ячейку Z1 для точного восстановления
+  sheet.getRange(1, 26).setValue(JSON.stringify(settings));
+
+  var widths = [160, 200, 220, 160, 110, 320];
+  for (var w = 0; w < widths.length; w++) {
+    sheet.setColumnWidth(w + 1, widths[w]);
+  }
+
+  return { status: 'ok', message: 'Настройки успешно выгружены в Google Таблицу', count: rows.length };
+}
+
 // Проверка пользователя в таблице
 function verifyUserInSheet(userSheet, inputLogin, inputPass, inputHash) {
   if (!inputLogin) return { status: 'not_found', message: 'Логин не указан' };
@@ -244,7 +425,6 @@ function verifyUserInSheet(userSheet, inputLogin, inputPass, inputHash) {
   var cleanPass = (inputPass || '').toString();
   var cleanHash = (inputHash || '').toString().trim().toLowerCase();
 
-  // Определяем колонки
   var headers = data[0].map(function(h) { return h.toString().trim().toLowerCase(); });
   var colLogin = 1;
   var colPlain = 2;
@@ -405,6 +585,31 @@ function getOrCreateUsersSheet(ss) {
       new Date().toLocaleString("ru-RU"),
       ''
     ]);
+  }
+  return sheet;
+}
+
+// Лист 3: Настройки
+function getOrCreateSettingsSheet(ss) {
+  var sheet = ss.getSheetByName(SHEET_SETTINGS);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_SETTINGS);
+    var headers = [
+      'Категория',
+      'Параметр / Код',
+      'Наименование',
+      'Значение / Цена (руб)',
+      'Ед. изм.',
+      'Дополнительные параметры (брак %, наценки, слои)'
+    ];
+    sheet.appendRow(headers);
+
+    var headerRange = sheet.getRange(1, 1, 1, headers.length);
+    headerRange.setBackground('#1e293b');
+    headerRange.setFontColor('#f8fafc');
+    headerRange.setFontWeight('bold');
+    headerRange.setHorizontalAlignment('center');
+    sheet.setFrozenRows(1);
   }
   return sheet;
 }

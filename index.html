@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Рассчётник blstcs.ru v2.8 (Автономный)</title>
+  <title>Калькулятор стоимости баллистики blstcs v3.6</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -323,7 +323,7 @@
         <div>
           <h1 class="text-base sm:text-lg font-bold text-main leading-tight tracking-tight flex items-center gap-2">
             Рассчётник blstcs.ru
-            <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-theme text-white shadow-sm">v2.8 Автономный</span>
+            <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-theme text-white shadow-sm">v3.6 Multi-Sync</span>
           </h1>
           <p class="text-xs text-muted hidden sm:block">Калькулятор себестоимости и цен защитных элементов</p>
         </div>
@@ -680,26 +680,9 @@
                 </div>
               </div>
 
-              <!-- SVMP Grid -->
-              <div class="bg-black/25 rounded-xl p-2.5 border border-white/10">
-                <div class="text-[10px] font-bold text-sky-300 mb-1.5 flex justify-between">
-                  <span>СВМПэ (полиэтилен)</span>
-                  <span class="opacity-70">наценка ×<span id="hero-svmp-mult">3.3</span></span>
-                </div>
-                <div class="grid grid-cols-2 gap-1.5" id="hero-svmp-grid">
-                  <!-- Populated by JS -->
-                </div>
-              </div>
-
-              <!-- Aramid Grid -->
-              <div class="bg-black/25 rounded-xl p-2.5 border border-white/10">
-                <div class="text-[10px] font-bold text-amber-300 mb-1.5 flex justify-between">
-                  <span>Арамид (Тварон / Кевлар)</span>
-                  <span class="opacity-70">наценка ×2.625</span>
-                </div>
-                <div class="grid grid-cols-2 gap-1.5" id="hero-aramid-grid">
-                  <!-- Populated by JS -->
-                </div>
+              <!-- Dynamic Ballistics Grids Container -->
+              <div id="hero-all-layers-container" class="space-y-2.5">
+                <!-- Dynamically populated for each ballistic material -->
               </div>
             </div>
           </div>
@@ -955,8 +938,8 @@
             <button onclick="exportHistoryCSV()" class="px-3.5 py-2 text-xs font-semibold bg-emerald-900/40 text-emerald-300 border border-emerald-700/60 rounded-lg hover:bg-emerald-900/60 transition flex items-center gap-1.5 shadow-sm">
               <i class="fa-solid fa-file-excel"></i> Экспорт в CSV (Excel)
             </button>
-            <button onclick="clearAllHistory()" class="px-3.5 py-2 text-xs font-semibold bg-rose-900/30 text-rose-300 border border-rose-700/60 rounded-lg hover:bg-rose-900/50 transition flex items-center gap-1.5 shadow-sm">
-              <i class="fa-solid fa-trash"></i> Очистить историю
+            <button onclick="clearMyHistory()" class="px-3.5 py-2 text-xs font-semibold bg-rose-900/30 text-rose-300 border border-rose-700/60 rounded-lg hover:bg-rose-900/50 transition flex items-center gap-1.5 shadow-sm" title="Очистить только свои расчеты по текущему аккаунту">
+              <i class="fa-solid fa-user-xmark"></i> Очистить свои записи
             </button>
           </div>
         </div>
@@ -1050,6 +1033,9 @@
           <button onclick="saveSettingsToStorage()" class="px-4 py-2 text-xs font-semibold bg-theme bg-theme-hover text-white rounded-lg shadow-md transition flex items-center gap-1.5" style="box-shadow: 0 4px 12px var(--theme-ring);">
             <i class="fa-solid fa-check"></i> Сохранить настройки
           </button>
+          <button onclick="saveSettingsToGoogleSheet()" class="px-4 py-2 text-xs font-semibold bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg shadow-md transition flex items-center gap-1.5" title="Выгрузить все настройки в лист «Настройки» Google Таблицы">
+            <i class="fa-solid fa-cloud-arrow-up"></i> Выгрузить в Google Таблицу
+          </button>
           <button onclick="resetSettingsToDefault()" class="px-4 py-2 text-xs font-medium bg-card hover:bg-theme-light border border-card text-muted hover:text-main rounded-lg transition flex items-center gap-1.5">
             <i class="fa-solid fa-arrow-rotate-left"></i> Сбросить по умолчанию
           </button>
@@ -1083,45 +1069,24 @@
           <div class="flex justify-between items-center mb-3">
             <div>
               <h3 class="text-sm font-semibold text-main flex items-center gap-2">
-                <i class="fa-solid fa-layer-group text-theme"></i> Настройка вариантов слойности
+                <i class="fa-solid fa-layer-group text-theme"></i> Настройка вариантов слойности и баллистики
               </h3>
-              <p class="text-xs text-muted">Задайте доступные слои для СВМПэ и Арамида (числа через запятую)</p>
+              <p class="text-xs text-muted">Изменяйте названия материалов баллистики, цены за м², базовые наценки и доступные слои через запятую</p>
             </div>
-            <button type="button" onclick="resetLayersToStandard()" class="text-xs text-muted hover:text-theme transition font-medium">
-              Сброс слоёв
-            </button>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="addBallisticMaterialRow()" class="px-2.5 py-1 text-xs font-semibold bg-theme/20 text-theme border border-theme/40 rounded-lg hover:bg-theme/30 transition flex items-center gap-1 shadow-sm">
+                <i class="fa-solid fa-plus"></i> Добавить материал
+              </button>
+              <button type="button" onclick="resetLayersToStandard()" class="text-xs text-muted hover:text-theme transition font-medium">
+                Сброс слоёв
+              </button>
+            </div>
           </div>
           
-          <div class="space-y-4 text-xs">
-            <div>
-              <div class="flex justify-between items-center mb-1">
-                <label class="font-bold text-main flex items-center gap-1.5">
-                  <i class="fa-solid fa-shield-halved text-sky-400"></i> Слои для СВМПэ:
-                </label>
-                <span class="text-[10px] text-muted">стандарт: 20, 25, 30, 40</span>
-              </div>
-              <input type="text" id="set_layers_svmp" oninput="renderLayersSettingsPills()" class="input-theme w-full rounded-lg p-2.5 font-mono text-xs font-bold" placeholder="20, 25, 30, 40">
-              <div id="set_layers_svmp_pills" class="flex flex-wrap gap-1.5 mt-2">
-                <!-- Interactive preview pills -->
-              </div>
-            </div>
-
-            <div class="pt-3 border-t border-card">
-              <div class="flex justify-between items-center mb-1">
-                <label class="font-bold text-main flex items-center gap-1.5">
-                  <i class="fa-solid fa-award text-amber-400"></i> Слои для Арамида:
-                </label>
-                <span class="text-[10px] text-muted">только 18, 26</span>
-              </div>
-              <input type="text" id="set_layers_aramid" oninput="renderLayersSettingsPills()" class="input-theme w-full rounded-lg p-2.5 font-mono text-xs font-bold" placeholder="18, 26">
-              <div id="set_layers_aramid_pills" class="flex flex-wrap gap-1.5 mt-2">
-                <!-- Interactive preview pills -->
-              </div>
-            </div>
+          <div id="ballistics-settings-container" class="space-y-4 text-xs">
+            <!-- Populated dynamically by renderBallisticsSettings() -->
           </div>
-        </div>
-
-        <!-- General Parameters -->
+        </div><!-- General Parameters -->
         <div class="bg-card p-6 rounded-2xl border border-card shadow-lg transition-all hover:border-theme">
           <h3 class="text-sm font-semibold text-main mb-3 flex items-center gap-2">
             <i class="fa-solid fa-gears text-theme"></i> Общие нормативы и наценки
@@ -1630,6 +1595,7 @@
       filterAndSortHistory();
       updateGoogleSheetBadges();
       initAuth();
+      startAutoSyncTimer();
       // Auto-sync calculation history on startup
       if (appSettings.cloud_sync && appSettings.cloud_sync.url) {
         syncWithGoogleSheet(true);
@@ -1800,13 +1766,38 @@
       appSettings.general.svmp_default_multiplier = parseFloat(document.getElementById("set_svmp_multiplier").value) || 3.3;
       appSettings.general.aramid_default_multiplier = parseFloat(document.getElementById("set_aramid_multiplier").value) || 2.625;
 
-      // Save materials
-      appSettings.materials.forEach((m, idx) => {
-        const pEl = document.getElementById(`set_mat_price_${idx}`);
-        const dEl = document.getElementById(`set_mat_defect_${idx}`);
-        if (pEl) m.price_per_m2 = parseFloat(pEl.value) || m.price_per_m2;
-        if (dEl) m.defect_pct = parseFloat(dEl.value) || m.defect_pct;
-      });
+      // Save ballistic materials & allowed layers
+      const bContainer = document.getElementById("ballistics-settings-container");
+      if (bContainer && bContainer.children.length > 0) {
+        const newMaterials = [];
+        const newAllowed = {};
+        for (let idx = 0; idx < bContainer.children.length; idx++) {
+          const nameEl = document.getElementById(`set_mat_name_${idx}`);
+          const priceEl = document.getElementById(`set_mat_price_${idx}`);
+          const multEl = document.getElementById(`set_mat_mult_${idx}`);
+          const layersEl = document.getElementById(`set_mat_layers_${idx}`);
+          if (nameEl) {
+            const mName = nameEl.value.trim() || `Материал ${idx + 1}`;
+            const mPrice = priceEl ? (parseFloat(priceEl.value) || 0) : 456.25;
+            const mMult = multEl ? (parseFloat(multEl.value) || 3.0) : 3.0;
+            const mLayers = layersEl ? parseLayerInputString(layersEl.value, [20, 25, 30, 40]) : [20, 25, 30, 40];
+            const oldMat = (appSettings.materials && appSettings.materials[idx]) ? appSettings.materials[idx] : {};
+            newMaterials.push({
+              code: oldMat.code || `MAT_${idx + 1}`,
+              name: mName,
+              unit: "м²",
+              price_per_m2: mPrice,
+              defect_pct: oldMat.defect_pct || 3.0,
+              default_multiplier: mMult
+            });
+            newAllowed[mName] = mLayers;
+          }
+        }
+        if (newMaterials.length > 0) {
+          appSettings.materials = newMaterials;
+          appSettings.allowed_layers = newAllowed;
+        }
+      }
 
       // Save covers
       appSettings.covers.forEach((c, idx) => {
@@ -1839,14 +1830,6 @@
       });
 
       
-      // Save allowed layers
-      const svmpLInput = document.getElementById("set_layers_svmp");
-      const aramidLInput = document.getElementById("set_layers_aramid");
-      if (svmpLInput && aramidLInput) {
-        appSettings.allowed_layers["СВМПэ"] = parseLayerInputString(svmpLInput.value, [20, 25, 30, 40]);
-        appSettings.allowed_layers["Арамид"] = parseLayerInputString(aramidLInput.value, [18, 26]);
-      }
-
       // Cloud Sync Settings
       if (!appSettings.cloud_sync) appSettings.cloud_sync = {};
       const gUrlInput = document.getElementById("setting_gspread_url");
@@ -1872,7 +1855,15 @@
       renderExtraCovers();
       renderAccessories();
       calculateNow();
-      showToast("Настройки справочников успешно сохранены!");
+      renderBallisticsSettings();
+      if (typeof renderHeroAllLayers === "function" && lastCalculated) calculateNow();
+
+      if (appSettings.cloud_sync && appSettings.cloud_sync.url) {
+        saveSettingsToGoogleSheet(true);
+        showToast("Настройки сохранены и синхронизированы с Google Таблицей!");
+      } else {
+        showToast("Настройки справочников успешно сохранены!");
+      }
     }
 
     function resetSettingsToDefault() {
@@ -1890,6 +1881,26 @@
     // ================= SELECTS & FORM POPULATION =================
     function populateSelectOptions() {
       // Primary cover fabrics
+      // Ballistic materials dropdown
+      const matSelect = document.getElementById("material");
+      if (matSelect) {
+        const currentMat = matSelect.value;
+        matSelect.innerHTML = "";
+        const mats = (appSettings.materials && appSettings.materials.length > 0) ? appSettings.materials : DEFAULT_SETTINGS.materials;
+        mats.forEach(m => {
+          const opt = document.createElement("option");
+          opt.value = m.name;
+          opt.textContent = `${m.name} (${m.price_per_m2} ₽/м²)`;
+          matSelect.appendChild(opt);
+        });
+        if (currentMat && Array.from(matSelect.options).some(o => o.value === currentMat)) {
+          matSelect.value = currentMat;
+        } else if (matSelect.options.length > 0) {
+          matSelect.selectedIndex = 0;
+        }
+        if (typeof onMaterialChange === "function") onMaterialChange();
+      }
+
       const coverSelect = document.getElementById("cover_material");
       if (coverSelect) {
         const currentCover = coverSelect.value;
@@ -1936,12 +1947,42 @@
       onMaterialChange();
     }
 
-    function onMaterialChange() {
-      const mat = document.getElementById("material").value;
-      const layersSelect = document.getElementById("layers");
-      const currentLayer = parseInt(layersSelect.value);
+    
+    // ================= ROBUST LAYERS & MATERIALS NORMALIZER =================
+    function getAllowedLayers(matName) {
+      if (!matName) matName = "СВМПэ";
+      const allowed = appSettings.allowed_layers;
+      if (allowed) {
+        if (Array.isArray(allowed)) {
+          const found = allowed.find(x => x.name && x.name.toLowerCase() === matName.toLowerCase());
+          if (found && Array.isArray(found.layers) && found.layers.length > 0) {
+            return found.layers;
+          }
+        } else if (typeof allowed === "object") {
+          for (const k in allowed) {
+            if (k.toLowerCase() === matName.toLowerCase()) {
+              const val = allowed[k];
+              if (Array.isArray(val) && val.length > 0) return val;
+            }
+          }
+        }
+      }
+      if (matName.toLowerCase().includes("арамид")) return [18, 26];
+      return [20, 25, 30, 40];
+    }
 
-      const allowed = appSettings.allowed_layers[mat] || [20, 25, 30, 40];
+    function updateLayersDropdown(preferredLayer) {
+      const matSelect = document.getElementById("material");
+      const layersSelect = document.getElementById("layers");
+      if (!matSelect || !layersSelect) return;
+
+      const currentMat = matSelect.value;
+      const allowed = getAllowedLayers(currentMat);
+
+      const prevVal = (preferredLayer !== undefined && preferredLayer !== null && preferredLayer !== "") 
+        ? parseInt(preferredLayer) 
+        : parseInt(layersSelect.value);
+
       layersSelect.innerHTML = "";
       allowed.forEach(l => {
         const opt = document.createElement("option");
@@ -1950,11 +1991,17 @@
         layersSelect.appendChild(opt);
       });
 
-      if (allowed.includes(currentLayer)) {
-        layersSelect.value = currentLayer;
-      } else {
+      if (allowed.includes(prevVal)) {
+        layersSelect.value = prevVal;
+      } else if (allowed.length > 0) {
         layersSelect.value = allowed[0];
       }
+    }
+
+    function onMaterialChange(preferredLayer) {
+      const matSelect = document.getElementById("material");
+      if (!matSelect) return;
+      const mat = matSelect.value;
 
       const isAramid = mat.toLowerCase().includes("арамид");
       const pWrap = document.getElementById("paper-toggle-wrapper");
@@ -1966,10 +2013,10 @@
       if (rPaper) rPaper.style.display = isAramid ? "flex" : "none";
       if (rEdg) rEdg.style.display = isAramid ? "flex" : "none";
 
+      updateLayersDropdown(preferredLayer);
       calculateNow();
     }
 
-    // ================= EXTRA FABRICS (ДОПОЛНИТЕЛЬНЫЕ ТКАНИ) =================
     function addExtraCoverRow() {
       const defaultFabric = appSettings.covers[0] || { name: "Ткань для УЗ", price_per_m2: 510, area_markup_pct: 5, defect_markup_pct: 2 };
       extraCovers.push({
@@ -2216,6 +2263,18 @@
       const val = parseFloat(inputEl.value) || 0;
       parts[index][field] = val;
 
+      // Auto-update perimeter if length or width changed
+      if (field === 'length_cm' || field === 'width_cm') {
+        const p = parts[index];
+        const newPerimMm = Math.round(2 * (p.length_cm + p.width_cm) * 10);
+        p.perimeter_mm = newPerimMm;
+        const row = inputEl.closest("tr");
+        if (row) {
+          const perimInput = row.querySelector("input[step='1']");
+          if (perimInput) perimInput.value = newPerimMm;
+        }
+      }
+
       const row = inputEl.closest("tr");
       if (row) {
         const p = parts[index];
@@ -2436,436 +2495,138 @@
 
     // Render Compact All Layers Comparison inside Hero Card
     function renderHeroAllLayers(singleAreaM2, perimM, partsCount, petCost, coverCost, accessoriesCost, stickerCost, workCost, customMult) {
-      const svmpGrid = document.getElementById("hero-svmp-grid");
-      const aramidGrid = document.getElementById("hero-aramid-grid");
-      if (!svmpGrid || !aramidGrid) return;
+      const container = document.getElementById("hero-all-layers-container");
+      if (!container) return;
 
-      const currentMat = document.getElementById("material").value;
-      const currentLayers = parseInt(document.getElementById("layers").value) || 25;
+      const currentMat = document.getElementById("material") ? document.getElementById("material").value : "СВМПэ";
+      const currentLayers = parseInt(document.getElementById("layers") ? document.getElementById("layers").value : 25) || 25;
 
-      const svmpLayers = (appSettings.allowed_layers && appSettings.allowed_layers["СВМПэ"]) ? appSettings.allowed_layers["СВМПэ"] : [20, 25, 30, 40];
-      const aramidLayers = (appSettings.allowed_layers && appSettings.allowed_layers["Арамид"]) ? appSettings.allowed_layers["Арамид"] : [18, 26];
+      const mats = (appSettings.materials && appSettings.materials.length > 0) ? appSettings.materials : DEFAULT_SETTINGS.materials;
 
-      const svmpPriceM2 = 456.25;
-      const aramidPriceM2 = 1530.0;
+      let html = "";
 
-      const svmpDefMult = appSettings.general.svmp_default_multiplier;
-      const aramidDefMult = appSettings.general.aramid_default_multiplier;
+      mats.forEach((m, mIdx) => {
+        const matLayers = getAllowedLayers(m.name);
+        const matPriceM2 = parseFloat(m.price_per_m2) || 456.25;
+        const isAramid = m.name.toLowerCase().includes("арамид");
+        const defMult = m.default_multiplier || (isAramid ? (appSettings.general.aramid_default_multiplier || 2.625) : (appSettings.general.svmp_default_multiplier || 3.3));
+        const mult = (customMult !== null && customMult !== undefined && customMult !== "") ? customMult : defMult;
 
-      // Render SVMP Grid
-      let svmpHtml = "";
-      svmpLayers.forEach(l => {
-        const isSel = (currentMat === "СВМПэ" && currentLayers === l);
-        const calcArea = singleAreaM2 * l;
-        const bCost = calcArea * svmpPriceM2;
-        const matCost = bCost + petCost + coverCost + accessoriesCost + stickerCost;
-        const totCost = matCost + workCost;
-        const mult = customMult !== null ? customMult : svmpDefMult;
-        const raw = totCost * mult;
-        const price = raw > 0 ? Math.ceil(Math.round(raw * 10000) / 10000 / 100) * 100 : 0;
+        const colorHeader = isAramid ? "text-amber-300" : (mIdx % 2 === 0 ? "text-sky-300" : "text-emerald-300");
 
-        const btnStyle = isSel
-          ? "bg-white text-slate-900 border-white shadow-lg ring-2 ring-amber-400 font-bold"
-          : "bg-white/10 hover:bg-white/20 text-white border-white/15 font-medium";
-        const priceCol = isSel ? "text-slate-950 font-black" : "text-sky-300";
-
-        svmpHtml += `
-          <button type="button" onclick="selectHeroLayer('СВМПэ', ${l})" class="text-left p-1.5 rounded-lg border transition flex items-center justify-between ${btnStyle}">
-            <div>
-              <span class="text-[11px] font-bold block">${l} сл.</span>
-              <span class="text-[9px] opacity-70 block">${l===20?'Бр1':(l===25?'Класс С':(l===30?'Класс У':'Класс СС'))}</span>
+        html += `
+          <div class="bg-black/25 rounded-xl p-2.5 border border-white/10">
+            <div class="text-[10px] font-bold ${colorHeader} mb-1.5 flex justify-between items-center">
+              <span>${m.name}</span>
+              <span class="opacity-70 font-mono text-[9px]">наценка ×${mult}</span>
             </div>
-            <div class="text-right">
-              <span class="font-mono font-bold text-xs ${priceCol} block">${price.toLocaleString('ru-RU')} ₽</span>
-              <span class="text-[9px] opacity-60 block">${totCost.toFixed(0)} ₽</span>
+            <div class="grid grid-cols-2 gap-1.5">
+        `;
+
+        matLayers.forEach(l => {
+          const isSel = (currentMat === m.name && currentLayers === l);
+          const bCost = singleAreaM2 * l * matPriceM2;
+          let aramidExtra = 0;
+          if (isAramid) {
+            const incPaper = document.getElementById("include_aramid_paper") ? document.getElementById("include_aramid_paper").checked : true;
+            const incEdging = document.getElementById("include_aramid_edging") ? document.getElementById("include_aramid_edging").checked : true;
+            if (incPaper) aramidExtra += singleAreaM2 * (appSettings.general.aramid_paper_price_per_m2 || 38.46);
+            if (incEdging) aramidExtra += (perimM || 0) * (appSettings.general.aramid_edging_price_per_m || 5.0);
+          }
+
+          const totCost = bCost + petCost + coverCost + accessoriesCost + stickerCost + workCost + aramidExtra;
+          const raw = totCost * mult;
+          // Exact same rounding as calculateNow to prevent price jumping!
+          const price = raw > 0 ? Math.ceil(Math.round(raw * 10000) / 10000 / 100) * 100 : 0;
+
+          const selClass = isSel
+            ? "bg-white text-slate-900 border-white shadow-lg ring-2 ring-amber-400 font-bold"
+            : "bg-white/10 hover:bg-white/20 text-white border-white/15 font-medium";
+          const priceCol = isSel ? "text-slate-950 font-black" : (isAramid ? "text-amber-300" : "text-sky-300");
+
+          html += `
+            <button type="button" onclick="selectHeroLayer('${m.name.replace(/'/g, "\\'")}', ${l})" class="p-2 rounded-lg border text-left transition flex justify-between items-center ${selClass}">
+              <div>
+                <div class="text-[11px] font-bold block">${l} сл.</div>
+                <div class="text-[9px] opacity-70 block">${totCost.toFixed(0)} ₽ себест.</div>
+              </div>
+              <div class="text-right">
+                <div class="text-xs font-mono font-bold ${priceCol} block">${price.toLocaleString('ru-RU')} ₽</div>
+              </div>
+            </button>
+          `;
+        });
+
+        html += `
             </div>
-          </button>
+          </div>
         `;
       });
-      svmpGrid.innerHTML = svmpHtml;
 
-      // Render Aramid Grid
-      let aramidHtml = "";
-      const incPaper = document.getElementById("include_aramid_paper").checked;
-      const incEdging = document.getElementById("include_aramid_edging").checked;
-      const papCost = incPaper ? singleAreaM2 * appSettings.general.aramid_paper_price_per_m2 : 0;
-      const edgCost = incEdging ? perimM * appSettings.general.aramid_edging_price_per_m : 0;
-
-      aramidLayers.forEach(l => {
-        const isSel = (currentMat === "Арамид" && currentLayers === l);
-        const calcArea = singleAreaM2 * l;
-        const bCost = calcArea * aramidPriceM2;
-        const matCost = bCost + petCost + coverCost + accessoriesCost + stickerCost + papCost + edgCost;
-        const totCost = matCost + workCost;
-        const mult = customMult !== null ? customMult : aramidDefMult;
-        const raw = totCost * mult;
-        const price = raw > 0 ? Math.ceil(Math.round(raw * 10000) / 10000 / 100) * 100 : 0;
-
-        const btnStyle = isSel
-          ? "bg-white text-slate-900 border-white shadow-lg ring-2 ring-amber-400 font-bold"
-          : "bg-white/10 hover:bg-white/20 text-white border-white/15 font-medium";
-        const priceCol = isSel ? "text-slate-950 font-black" : "text-amber-300";
-
-        aramidHtml += `
-          <button type="button" onclick="selectHeroLayer('Арамид', ${l})" class="text-left p-1.5 rounded-lg border transition flex items-center justify-between ${btnStyle}">
-            <div>
-              <span class="text-[11px] font-bold block">${l} сл.</span>
-              <span class="text-[9px] opacity-70 block">${l===18?'Класс А':(l===26?'Класс АУ':'Класс АСС')}</span>
-            </div>
-            <div class="text-right">
-              <span class="font-mono font-bold text-xs ${priceCol} block">${price.toLocaleString('ru-RU')} ₽</span>
-              <span class="text-[9px] opacity-60 block">${totCost.toFixed(0)} ₽</span>
-            </div>
-          </button>
-        `;
-      });
-      aramidGrid.innerHTML = aramidHtml;
+      container.innerHTML = html;
     }
 
-    function selectHeroLayer(mat, layers) {
+    function selectHeroLayer(mat, layer) {
       const matSelect = document.getElementById("material");
-      if (matSelect && matSelect.value !== mat) {
-        matSelect.value = mat;
-        onMaterialChange();
-      }
       const layersSelect = document.getElementById("layers");
-      if (layersSelect) {
-        layersSelect.value = layers;
+      if (!matSelect || !layersSelect) return;
+
+      const matChanged = (matSelect.value !== mat);
+      matSelect.value = mat;
+
+      if (matChanged) {
+        const isAramid = mat.toLowerCase().includes("арамид");
+        const pWrap = document.getElementById("paper-toggle-wrapper");
+        const eWrap = document.getElementById("edging-toggle-wrapper");
+        const rPaper = document.getElementById("row-aramid-paper");
+        const rEdg = document.getElementById("row-aramid-edging");
+        if (pWrap) pWrap.style.display = isAramid ? "flex" : "none";
+        if (eWrap) eWrap.style.display = isAramid ? "flex" : "none";
+        if (rPaper) rPaper.style.display = isAramid ? "flex" : "none";
+        if (rEdg) rEdg.style.display = isAramid ? "flex" : "none";
+
+        updateLayersDropdown(layer);
+      } else {
+        layersSelect.value = layer;
       }
+
       calculateNow();
-      showToast(`Выбран пакет: ${mat} ${layers} слоёв`);
+      showToast(`Выбран пакет: ${mat} ${layer} слоёв`);
     }
 
-    function copyCommercialProposal() {
-      const prodName = document.getElementById("product_name").value.trim() || "Баллистический пакет";
-      const prodCode = document.getElementById("product_code").value.trim();
-      const codeStr = prodCode ? ` [${prodCode}]` : "";
-      const coverMat = document.getElementById("cover_material").value || "Ткань для УЗ";
-      const twoSided = document.getElementById("cover_two_sided").checked ? "2 стороны" : "1 сторона";
-      const sticker = document.getElementById("sticker_code").value || "Стандарт";
-
-      let partsStr = parts.map((p, idx) => `  • Деталь ${idx+1}: ${p.length_cm} × ${p.width_cm} см (периметр ${p.perimeter_mm} мм) — ${p.quantity} шт.`).join("\n");
-
-      let extraCoversStr = extraCovers.length > 0 ? "\nДополнительные ткани:\n" + extraCovers.map(e => `  • ${e.fabric_name} (${e.label}, ${e.area_mult}×)`).join("\n") : "";
-      let accStr = accessories.length > 0 ? "\nФурнитура и опции:\n" + accessories.map(a => `  • ${a.name}: ${a.qty} ${a.unit} (по ${a.price} ₽)`).join("\n") : "";
-
-      // Quick prices
-      let singleArea = 0;
-      parts.forEach(p => { if (p.quantity > 0) singleArea += (p.length_cm * p.width_cm * p.quantity) / 10000; });
-      let petCost = document.getElementById("include_pet").checked ? singleArea * appSettings.general.pet_price_per_m2 : 0;
-      let coverCost = 0;
-      const c = appSettings.covers.find(x => x.name.toLowerCase() === coverMat.toLowerCase());
-      if (c) coverCost = singleArea * (1 + c.area_markup_pct/100) * (1 + c.defect_markup_pct/100) * c.price_per_m2 * (document.getElementById("cover_two_sided").checked ? 2 : 1);
-      let extraCoversCost = 0;
-      extraCovers.forEach(ec => { extraCoversCost += singleArea * ec.area_mult * (1 + ec.area_markup_pct/100) * (1 + ec.defect_markup_pct/100) * ec.price_per_m2; });
-      let accCost = 0;
-      accessories.forEach(a => { accCost += a.qty * a.price; });
-      let stCost = 50;
-      let workCost = parts.reduce((acc, p) => acc + (p.quantity || 0), 0) * appSettings.general.work_price_per_part;
-
-      const getSvmpP = (l) => {
-        const t = (singleArea * l * 456.25 + petCost + coverCost + extraCoversCost + accCost + stCost) + workCost;
-        return Math.ceil(Math.round(t * appSettings.general.svmp_default_multiplier * 10000) / 10000 / 100) * 100;
-      };
-      const getAramidP = (l) => {
-        const pap = document.getElementById("include_aramid_paper").checked ? singleArea * 38.46 : 0;
-        const edg = document.getElementById("include_aramid_edging").checked ? (parts.reduce((acc, p) => acc + (p.perimeter_mm*p.quantity)/1000, 0)) * 5.0 : 0;
-        const t = (singleArea * l * 1530.0 + petCost + coverCost + extraCoversCost + accCost + stCost + pap + edg) + workCost;
-        return Math.ceil(Math.round(t * appSettings.general.aramid_default_multiplier * 10000) / 10000 / 100) * 100;
-      };
-
-      const text = `📋 КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ / РАСЧЁТ ЦЕН
-Изделие: ${prodName}${codeStr}
-Детали кроя:
-${partsStr}
-
-Материал: СВМПэ (баллистический полиэтилен):
-  • 20 слоёв (Бр1 / облегчённый) — ${getSvmpP(20).toLocaleString("ru-RU")} ₽
-  • 25 слоёв (Класс «С» / стандарт) — ${getSvmpP(25).toLocaleString("ru-RU")} ₽
-  • 30 слоёв (Класс «У» / усиленный) — ${getSvmpP(30).toLocaleString("ru-RU")} ₽
-  • 40 слоёв (Класс «СС» / максимальный) — ${getSvmpP(40).toLocaleString("ru-RU")} ₽
-
-Материал: АРАМИД (Тварон / Кевлар):
-  • 18 слоёв (Класс «А» / базовый) — ${getAramidP(18).toLocaleString("ru-RU")} ₽
-  • 26 слоёв (Класс «АУ» / усиленный) — ${getAramidP(26).toLocaleString("ru-RU")} ₽
-  • 40 слоёв (Класс «АСС» / максимальный) — ${getAramidP(40).toLocaleString("ru-RU")} ₽
-
-Комплектация: Чехол (${coverMat}, ${twoSided}), подпорка ПЭТ, маркировка (${sticker}).${extraCoversStr}${accStr}
-Дата: ${new Date().toLocaleDateString("ru-RU")}
-Создано в Рассчётник blstcs.ru`;
-
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(() => showToast("Коммерческое предложение скопировано!"))
-          .catch(() => fallbackCopyText(text));
-      } else {
-        fallbackCopyText(text);
-      }
-    }
-
-    function fallbackCopyText(text) {
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      document.body.appendChild(ta);
-      ta.select();
-      try {
-        document.execCommand("copy");
-        showToast("Коммерческое предложение скопировано!");
-      } catch (e) {
-        showToast("Ошибка копирования", true);
-      }
-      document.body.removeChild(ta);
-    }
-
-    // ================= HISTORY TAB (SEARCH & SORT) =================
-    function getHistoryList() {
-      const saved = localStorage.getItem("ballistics_history");
-      if (saved) {
-        try { return JSON.parse(saved); } catch (e) {}
-      }
-      return [];
-    }
-
-    function saveHistoryList(list) {
-      localStorage.setItem("ballistics_history", JSON.stringify(list));
-      allHistoryItems = list;
-      loadHistoryBadge();
-      filterAndSortHistory();
-    }
-
-    function loadHistoryBadge() {
-      const b = document.getElementById("history-badge");
-      if (b) b.innerText = allHistoryItems.length;
-    }
-
-    function saveCurrentCalculation() {
-      if (!lastCalculated) calculateNow();
+    function clearMyHistory() {
+      const currentAuthor = getCurrentUserIdentifier();
+      const currentAuthorLower = currentAuthor.toLowerCase();
       const list = getHistoryList();
-      const partsSummary = parts.map(p => `${p.length_cm}×${p.width_cm} см (${p.quantity} шт)`).join(", ");
 
-      const item = {
-        id: list.length > 0 ? (list[0].id + 1) : 1,
-        created_at: new Date().toISOString(),
-        product_name: document.getElementById("product_name").value || "Без названия",
-        product_code: document.getElementById("product_code").value || "",
-        material: document.getElementById("material").value,
-        layers: parseInt(document.getElementById("layers").value),
-        parts: JSON.parse(JSON.stringify(parts)),
-        parts_summary: partsSummary,
-        cover_material: document.getElementById("cover_material").value,
-        cover_two_sided: document.getElementById("cover_two_sided").checked,
-        include_pet: document.getElementById("include_pet").checked,
-        extra_covers: JSON.parse(JSON.stringify(extraCovers)),
-        accessories: JSON.parse(JSON.stringify(accessories)),
-        sticker_code: document.getElementById("sticker_code").value,
-        sticker_qty: parseInt(document.getElementById("sticker_qty").value) || 0,
-        custom_markup: document.getElementById("custom_markup").value,
-        work_price_per_part: document.getElementById("work_price_per_part").value,
-        include_aramid_paper: document.getElementById("include_aramid_paper").checked,
-        include_aramid_edging: document.getElementById("include_aramid_edging").checked,
-        total_cost: lastCalculated.totalCost,
-        sale_price: lastCalculated.salePrice
-      };
-
-      list.unshift(item);
-      saveHistoryList(list);
-      
-      // Auto-send to Google Sheets if configured
-      if (appSettings.cloud_sync && appSettings.cloud_sync.auto_save && appSettings.cloud_sync.url) {
-        sendRecordsToGoogleSheet([item], false);
-        showToast("Расчет сохранен локально и отправлен в Google Таблицу!");
-      } else {
-        showToast("Расчет успешно сохранен в историю!");
-      }
-    }
-
-    function setHistoryMaterialFilter(mat) {
-      historyMaterialFilter = mat;
-      document.querySelectorAll(".history-filter-btn").forEach(btn => {
-        btn.classList.remove("bg-theme", "text-white", "border-theme");
-        btn.classList.add("bg-card", "text-muted", "border-card");
+      const myItems = list.filter(item => {
+        const a = (item.author || "").trim().toLowerCase();
+        return a === currentAuthorLower || a === "пользователь" || a === "";
       });
 
-      const activeId = mat === "ALL" ? "filter-btn-all" : (mat === "СВМПэ" ? "filter-btn-svmp" : "filter-btn-aramid");
-      const activeBtn = document.getElementById(activeId);
-      if (activeBtn) {
-        activeBtn.classList.remove("bg-card", "text-muted", "border-card");
-        activeBtn.classList.add("bg-theme", "text-white", "border-theme");
-      }
-
-      filterAndSortHistory();
-    }
-
-    function clearHistorySearch() {
-      const input = document.getElementById("history-search-input");
-      if (input) input.value = "";
-      filterAndSortHistory();
-    }
-
-    function cycleHistorySort(field) {
-      const current = document.getElementById("history-sort-select").value;
-      if (field === 'date') {
-        document.getElementById("history-sort-select").value = current === 'date_desc' ? 'date_asc' : 'date_desc';
-      } else if (field === 'price') {
-        document.getElementById("history-sort-select").value = current === 'price_desc' ? 'price_asc' : 'price_desc';
-      } else if (field === 'cost') {
-        document.getElementById("history-sort-select").value = current === 'cost_desc' ? 'cost_asc' : 'cost_desc';
-      } else if (field === 'name') {
-        document.getElementById("history-sort-select").value = 'name_asc';
-      }
-      filterAndSortHistory();
-    }
-
-    function filterAndSortHistory() {
-      const searchInput = document.getElementById("history-search-input");
-      const query = searchInput ? searchInput.value.trim().toLowerCase() : "";
-      const clearBtn = document.getElementById("history-search-clear");
-      if (clearBtn) clearBtn.classList.toggle("hidden", query.length === 0);
-
-      const sortSelect = document.getElementById("history-sort-select");
-      const sortMode = sortSelect ? sortSelect.value : "date_desc";
-
-      allHistoryItems = getHistoryList();
-      loadHistoryBadge();
-
-      let filtered = allHistoryItems.filter(item => {
-        if (historyMaterialFilter !== "ALL" && item.material !== historyMaterialFilter) {
-          return false;
-        }
-        if (query) {
-          const matchName = (item.product_name || "").toLowerCase().includes(query);
-          const matchCode = (item.product_code || "").toLowerCase().includes(query);
-          const matchMat = (item.material || "").toLowerCase().includes(query);
-          const matchParts = (item.parts_summary || "").toLowerCase().includes(query);
-          const matchCover = (item.cover_material || "").toLowerCase().includes(query);
-          const matchDate = (item.created_at || "").toLowerCase().includes(query);
-          const matchCost = (item.total_cost || "").toString().includes(query);
-          const matchPrice = (item.sale_price || "").toString().includes(query);
-          return matchName || matchCode || matchMat || matchParts || matchCover || matchDate || matchCost || matchPrice;
-        }
-        return true;
-      });
-
-      filtered.sort((a, b) => {
-        switch (sortMode) {
-          case "date_desc": return new Date(b.created_at) - new Date(a.created_at);
-          case "date_asc": return new Date(a.created_at) - new Date(b.created_at);
-          case "price_desc": return b.sale_price - a.sale_price;
-          case "price_asc": return a.sale_price - b.sale_price;
-          case "cost_desc": return b.total_cost - a.total_cost;
-          case "cost_asc": return a.total_cost - b.total_cost;
-          case "name_asc": return (a.product_name || "").localeCompare(b.product_name || "");
-          default: return b.id - a.id;
-        }
-      });
-
-      const counterText = document.getElementById("history-counter-text");
-      if (counterText) {
-        counterText.innerText = `Показано: ${filtered.length} из ${allHistoryItems.length} расчетов`;
-      }
-
-      const tbody = document.getElementById("history-table-body");
-      if (!tbody) return;
-      tbody.innerHTML = "";
-
-      if (filtered.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="10" class="py-8 text-center text-muted text-xs">
-              ${query ? `По запросу «${query}» ничего не найдено. <button onclick="clearHistorySearch()" class="text-theme underline ml-1">Сбросить поиск</button>` : 'История пуста. Произведите расчет и нажмите «Сохранить расчет в историю».'}
-            </td>
-          </tr>
-        `;
+      if (myItems.length === 0) {
+        showToast(`В истории нет записей для аккаунта «${currentAuthor}»`, true);
         return;
       }
 
-      filtered.forEach(item => {
-        const row = document.createElement("tr");
-        row.className = "hover:bg-theme-light/20 transition cursor-pointer";
-        const dateStr = new Date(item.created_at).toLocaleString("ru-RU", {
-          day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"
-        });
+      if (!confirm(`Вы действительно хотите удалить только свои расчеты (${myItems.length} шт.) для аккаунта «${currentAuthor}» на этом устройстве?\n\nЗаписи других сотрудников останутся без изменений.`)) {
+        return;
+      }
 
-        row.innerHTML = `
-          <td class="py-3 px-4 text-muted font-mono">#${item.id}</td>
-          <td class="py-3 px-4 text-muted whitespace-nowrap font-mono">${dateStr}</td>
-          <td class="py-3 px-4 font-medium text-main">
-            ${item.product_name}
-            ${item.product_code ? `<span class="ml-1 text-[11px] px-1.5 py-0.5 rounded bg-black/20 text-muted font-mono">${item.product_code}</span>` : ""}
-          </td>
-          <td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-[11px] font-semibold ${item.material === 'СВМПэ' ? 'bg-theme-light text-theme-dark border border-theme' : 'bg-amber-950/40 text-amber-300 border border-amber-800'}">${item.material}</span></td>
-          <td class="py-3 px-4 font-semibold text-main font-mono">${item.layers}</td>
-          <td class="py-3 px-4 text-muted max-w-xs truncate" title="${item.parts_summary}">${item.parts_summary}</td>
-          <td class="py-3 px-4 text-muted">${item.cover_material || "—"}</td>
-          <td class="py-3 px-4 text-right font-medium text-main font-mono">${item.total_cost ? item.total_cost.toLocaleString("ru-RU", { minimumFractionDigits: 2 }) : 0} ₽</td>
-          <td class="py-3 px-4 text-right font-bold text-emerald-400 font-mono text-sm">${item.sale_price ? item.sale_price.toLocaleString("ru-RU") : 0} ₽</td>
-          <td class="py-3 px-4 text-center whitespace-nowrap space-x-2">
-            <button onclick="reopenHistoryItem(${item.id})" title="Загрузить в калькулятор" class="px-2.5 py-1 bg-theme-light text-theme-dark hover:opacity-80 rounded-lg text-xs font-semibold shadow-sm">
-              <i class="fa-solid fa-arrow-up-right-from-square"></i>
-            </button>
-            <button onclick="deleteHistoryItem(${item.id})" title="Удалить" class="px-2.5 py-1 bg-rose-950/40 text-rose-300 hover:bg-rose-900/60 rounded-lg text-xs">
-              <i class="fa-solid fa-trash-can"></i>
-            </button>
-          </td>
-        `;
-        tbody.appendChild(row);
+      const remaining = list.filter(item => {
+        const a = (item.author || "").trim().toLowerCase();
+        return a !== currentAuthorLower && a !== "пользователь" && a !== "";
       });
-    }
 
-    function reopenHistoryItem(id) {
-      const item = allHistoryItems.find(x => x.id === id);
-      if (!item) return;
-
-      document.getElementById("product_name").value = item.product_name || "";
-      document.getElementById("product_code").value = item.product_code || "";
-      document.getElementById("material").value = item.material || "СВМПэ";
-      onMaterialChange();
-
-      document.getElementById("layers").value = item.layers;
-      document.getElementById("include_pet").checked = !!item.include_pet;
-      document.getElementById("cover_material").value = item.cover_material || "";
-      document.getElementById("cover_two_sided").checked = item.cover_two_sided !== false;
-      document.getElementById("sticker_code").value = item.sticker_code || "";
-      document.getElementById("sticker_qty").value = item.sticker_qty || 0;
-      document.getElementById("custom_markup").value = item.custom_markup || "";
-      document.getElementById("work_price_per_part").value = item.work_price_per_part || "";
-
-      if (item.extra_covers) {
-        extraCovers = JSON.parse(JSON.stringify(item.extra_covers));
-      } else {
-        extraCovers = [];
-      }
-      renderExtraCovers();
-
-      if (item.accessories) {
-        accessories = JSON.parse(JSON.stringify(item.accessories));
-      } else {
-        accessories = [];
-      }
-      renderAccessories();
-
-      if (item.parts && item.parts.length > 0) {
-        parts = JSON.parse(JSON.stringify(item.parts));
-      }
-      renderParts();
-      calculateNow();
-      switchTab("calculator");
-      showToast(`Загружен расчет #${id} (${item.product_name})`);
-    }
-
-    function deleteHistoryItem(id) {
-      if (!confirm(`Удалить расчет #${id} из истории?`)) return;
-      let list = getHistoryList();
-      list = list.filter(x => x.id !== id);
-      saveHistoryList(list);
-      showToast(`Запись #${id} удалена`);
+      saveHistoryList(remaining);
+      filterAndSortHistory();
+      showToast(`Удалены только ваши расчеты (${myItems.length} шт.)`);
     }
 
     function clearAllHistory() {
-      if (!confirm("Вы уверены, что хотите полностью очистить историю расчетов?")) return;
-      saveHistoryList([]);
-      showToast("История очищена");
+      clearMyHistory();
     }
-
+    
     function exportHistoryCSV() {
       const list = getHistoryList();
       if (list.length === 0) {
@@ -2952,16 +2713,7 @@ ${partsStr}
       renderAccessoriesSettingsTable();
       renderStickersSettingsTable();
 
-      // Populate layer inputs in Settings
-      const svmpLInput = document.getElementById("set_layers_svmp");
-      const aramidLInput = document.getElementById("set_layers_aramid");
-      if (svmpLInput && appSettings.allowed_layers && appSettings.allowed_layers["СВМПэ"]) {
-        svmpLInput.value = appSettings.allowed_layers["СВМПэ"].join(", ");
-      }
-      if (aramidLInput && appSettings.allowed_layers && appSettings.allowed_layers["Арамид"]) {
-        aramidLInput.value = appSettings.allowed_layers["Арамид"].join(", ");
-      }
-      renderLayersSettingsPills();
+      renderBallisticsSettings();
 
       if (isAdminUnlocked) {
         populateAdminFields();
@@ -3314,31 +3066,131 @@ ${partsStr}
 
 
     // ================= LAYER SETTINGS FUNCTIONS =================
-    function renderLayersSettingsPills() {
-      const svmpInput = document.getElementById("set_layers_svmp");
-      const aramidInput = document.getElementById("set_layers_aramid");
-      const svmpPills = document.getElementById("set_layers_svmp_pills");
-      const aramidPills = document.getElementById("set_layers_aramid_pills");
+    // ================= DYNAMIC BALLISTICS & LAYERS SETTINGS =================
+    function renderBallisticsSettings() {
+      const container = document.getElementById("ballistics-settings-container");
+      if (!container) return;
+      container.innerHTML = "";
 
-      if (svmpInput && svmpPills) {
-        const layers = parseLayerInputString(svmpInput.value, [20, 25, 30, 40]);
-        let h = "";
-        layers.forEach(l => {
-          const lbl = (LAYER_LABELS["СВМПэ"] && LAYER_LABELS["СВМПэ"][l]) ? ` (${LAYER_LABELS["СВМПэ"][l]})` : "";
-          h += `<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-sky-950/40 text-sky-300 border border-sky-800">${l} сл.${lbl}</span>`;
-        });
-        svmpPills.innerHTML = h || '<span class="text-[10px] text-muted italic">Нет слоев</span>';
-      }
+      const mats = (appSettings.materials && appSettings.materials.length > 0) ? appSettings.materials : DEFAULT_SETTINGS.materials;
+      const allowed = appSettings.allowed_layers || DEFAULT_SETTINGS.allowed_layers;
 
-      if (aramidInput && aramidPills) {
-        const layers = parseLayerInputString(aramidInput.value, [18, 26]);
-        let h = "";
-        layers.forEach(l => {
-          const lbl = (LAYER_LABELS["Арамид"] && LAYER_LABELS["Арамид"][l]) ? ` (${LAYER_LABELS["Арамид"][l]})` : "";
-          h += `<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-950/40 text-amber-300 border border-amber-800">${l} сл.${lbl}</span>`;
-        });
-        aramidPills.innerHTML = h || '<span class="text-[10px] text-muted italic">Нет слоев</span>';
+      mats.forEach((m, idx) => {
+        const matLayers = getAllowedLayers(m.name);
+
+        const isAramid = m.name.toLowerCase().includes("арамид");
+        const defMult = m.default_multiplier || (isAramid ? (appSettings.general.aramid_default_multiplier || 2.625) : (appSettings.general.svmp_default_multiplier || 3.3));
+        const iconClass = isAramid ? "fa-award text-amber-400" : (idx % 2 === 0 ? "fa-shield-halved text-sky-400" : "fa-shield text-emerald-400");
+
+        const row = document.createElement("div");
+        row.className = "p-3.5 rounded-xl bg-theme/5 border border-card space-y-3 relative transition hover:border-theme/40";
+        row.innerHTML = `
+          <div class="flex justify-between items-center pb-2 border-b border-card">
+            <div class="flex items-center gap-2">
+              <span class="w-5 h-5 rounded-full bg-theme/20 text-theme font-bold flex items-center justify-center text-[10px]">${idx + 1}</span>
+              <span class="font-bold text-main flex items-center gap-1.5"><i class="fa-solid ${iconClass}"></i> ${m.name}</span>
+            </div>
+            ${mats.length > 1 ? `<button type="button" onclick="removeBallisticMaterialRow(${idx})" class="text-muted hover:text-rose-400 p-1 transition text-xs" title="Удалить этот материал"><i class="fa-solid fa-trash-can"></i></button>` : ''}
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div>
+              <label class="block text-[11px] text-muted mb-1 font-medium">Название баллистики:</label>
+              <input type="text" id="set_mat_name_${idx}" value="${m.name}" oninput="onBallisticNameChange(${idx}, this.value)" class="input-theme w-full rounded-lg p-2 font-medium text-xs">
+            </div>
+            <div>
+              <label class="block text-[11px] text-muted mb-1 font-medium">Цена за 1 м² (руб):</label>
+              <input type="number" step="1" id="set_mat_price_${idx}" value="${m.price_per_m2}" class="input-theme w-full rounded-lg p-2 font-mono text-xs">
+            </div>
+            <div>
+              <label class="block text-[11px] text-muted mb-1 font-medium">Базовая наценка:</label>
+              <input type="number" step="0.05" id="set_mat_mult_${idx}" value="${defMult}" class="input-theme w-full rounded-lg p-2 font-mono text-xs">
+            </div>
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label class="block text-[11px] text-muted font-medium">Варианты слоев (через запятую):</label>
+              <span class="text-[10px] text-muted">пример: 20, 25, 30, 40</span>
+            </div>
+            <input type="text" id="set_mat_layers_${idx}" value="${matLayers.join(', ')}" oninput="renderMaterialPills(${idx})" class="input-theme w-full rounded-lg p-2 font-mono text-xs font-bold" placeholder="20, 25, 30, 40">
+            <div id="set_mat_pills_${idx}" class="flex flex-wrap gap-1.5 mt-2">
+              <!-- Interactive preview pills -->
+            </div>
+          </div>
+        `;
+        container.appendChild(row);
+        renderMaterialPills(idx);
+      });
+    }
+
+    function renderMaterialPills(idx) {
+      const input = document.getElementById(`set_mat_layers_${idx}`);
+      const pillsBox = document.getElementById(`set_mat_pills_${idx}`);
+      if (!input || !pillsBox) return;
+
+      const layers = parseLayerInputString(input.value, [20, 25, 30, 40]);
+      let h = "";
+      layers.forEach(l => {
+        h += `<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-theme/15 text-theme border border-theme/30">${l} сл.</span>`;
+      });
+      pillsBox.innerHTML = h || '<span class="text-[10px] text-muted italic">Нет слоев</span>';
+    }
+
+    function onBallisticNameChange(idx, newName) {
+      const titles = document.querySelectorAll("#ballistics-settings-container .font-bold.text-main");
+      if (titles && titles[idx]) {
+        titles[idx].innerHTML = `<i class="fa-solid fa-shield text-theme"></i> ${newName || 'Без названия'}`;
       }
+    }
+
+    function addBallisticMaterialRow() {
+      if (!appSettings.materials) appSettings.materials = [];
+      const newIdx = appSettings.materials.length + 1;
+      const newName = `Баллистика ${newIdx}`;
+      appSettings.materials.push({
+        code: `MAT_${Date.now()}`,
+        name: newName,
+        unit: "м²",
+        price_per_m2: 500,
+        defect_pct: 3.0,
+        default_multiplier: 3.0
+      });
+      if (!appSettings.allowed_layers) appSettings.allowed_layers = {};
+      if (Array.isArray(appSettings.allowed_layers)) {
+        appSettings.allowed_layers.push({ name: newName, layers: [20, 25, 30, 40] });
+      } else {
+        appSettings.allowed_layers[newName] = [20, 25, 30, 40];
+      }
+      renderBallisticsSettings();
+      populateSelectOptions();
+      showToast(`Добавлен новый материал «${newName}»`);
+    }
+
+    function removeBallisticMaterialRow(idx) {
+      if (appSettings.materials.length <= 1) {
+        showToast("Должен остаться хотя бы один баллистический материал", true);
+        return;
+      }
+      const removed = appSettings.materials.splice(idx, 1)[0];
+      if (removed && appSettings.allowed_layers) {
+        if (Array.isArray(appSettings.allowed_layers)) {
+          appSettings.allowed_layers = appSettings.allowed_layers.filter(x => x.name !== removed.name);
+        } else {
+          delete appSettings.allowed_layers[removed.name];
+        }
+      }
+      renderBallisticsSettings();
+      populateSelectOptions();
+      showToast(`Материал «${removed.name}» удален`);
+    }
+
+    function resetLayersToStandard() {
+      appSettings.materials = JSON.parse(JSON.stringify(DEFAULT_SETTINGS.materials));
+      appSettings.allowed_layers = JSON.parse(JSON.stringify(DEFAULT_SETTINGS.allowed_layers));
+      renderBallisticsSettings();
+      populateSelectOptions();
+      showToast("Слои и материалы баллистики сброшены к стандартам");
     }
 
     function parseLayerInputString(str, fallback) {
@@ -3347,26 +3199,16 @@ ${partsStr}
       return arr.length > 0 ? Array.from(new Set(arr)).sort((a,b) => a - b) : fallback;
     }
 
-    function resetLayersToStandard() {
-      const svmpInput = document.getElementById("set_layers_svmp");
-      const aramidInput = document.getElementById("set_layers_aramid");
-      if (svmpInput) svmpInput.value = "20, 25, 30, 40";
-      if (aramidInput) aramidInput.value = "18, 26";
-      renderLayersSettingsPills();
-      showToast("Слои сброшены к стандартным (СВМПэ: 20,25,30,40 / Арамид: 18,26)");
-    }
-
-
     // ================= SAVE ALL LAYERS TO HISTORY =================
     function saveAllLayersToHistory() {
-      const allLayersSavedItems = [];
+      const list = getHistoryList();
       let singleArea = 0;
       let perim = 0;
       let partsCount = 0;
       parts.forEach(p => {
         if (p.quantity > 0) {
           singleArea += (p.length_cm * p.width_cm * p.quantity) / 10000;
-          perim += p.perimeter_mm * p.quantity;
+          perim += (p.perimeter_mm || 0) * p.quantity / 1000;
           partsCount += parseInt(p.quantity) || 0;
         }
       });
@@ -3382,153 +3224,159 @@ ${partsStr}
       const twoSided = document.getElementById("cover_two_sided").checked;
       const stickerCode = document.getElementById("sticker_code").value || "";
       const stickerQty = parseInt(document.getElementById("sticker_qty").value) || 0;
-      const workRateInput = parseFloat(document.getElementById("work_price_per_part").value);
-      const workRate = !isNaN(workRateInput) ? workRateInput : appSettings.general.work_price_per_part;
-      const customMarkupInput = parseFloat(document.getElementById("custom_markup").value);
-      const customMult = (!isNaN(customMarkupInput) && customMarkupInput > 0) ? customMarkupInput : null;
-
       const partsSummary = parts.map(p => `${p.length_cm}×${p.width_cm} см (${p.quantity} шт)`).join(", ");
+      const customMarkupInput = document.getElementById("custom_markup").value;
+      const customMult = customMarkupInput ? parseFloat(customMarkupInput) : null;
+      const currentUser = getCurrentUserIdentifier();
 
-      let petCost = document.getElementById("include_pet").checked ? singleArea * appSettings.general.pet_price_per_m2 : 0;
-      let coverCost = 0;
-      const c = appSettings.covers.find(x => x.name.toLowerCase() === coverMat.toLowerCase());
-      if (c) {
-        coverCost = singleArea * (1 + c.area_markup_pct/100) * (1 + c.defect_markup_pct/100) * c.price_per_m2 * (twoSided ? 2 : 1);
+      // PET
+      let petCost = 0;
+      if (document.getElementById("include_pet").checked) {
+        petCost = singleArea * (appSettings.general.pet_price_per_m2 || 389.76);
       }
+
+      // Covers
+      const coverObj = (appSettings.covers || []).find(c => c.name === coverMat) || { price_per_m2: 510, area_markup_pct: 5, defect_markup_pct: 2 };
+      const coverMult = 1 + (coverObj.area_markup_pct / 100) + (coverObj.defect_markup_pct / 100);
+      const coverSides = twoSided ? 2 : 1;
+      const coverCost = singleArea * coverSides * coverObj.price_per_m2 * coverMult;
 
       let extraCoversCost = 0;
       extraCovers.forEach(ec => {
-        extraCoversCost += singleArea * ec.area_mult * (1 + ec.area_markup_pct/100) * (1 + ec.defect_markup_pct/100) * ec.price_per_m2;
+        const cObj = (appSettings.covers || []).find(c => c.name === ec.material);
+        if (cObj) {
+          const cMult = 1 + (cObj.area_markup_pct / 100) + (cObj.defect_markup_pct / 100);
+          const sides = ec.two_sided ? 2 : 1;
+          extraCoversCost += singleArea * sides * cObj.price_per_m2 * cMult;
+        }
       });
 
+      // Accessories
       let accessoriesCost = 0;
-      accessories.forEach(a => { accessoriesCost += (a.qty * a.price); });
+      accessories.forEach(a => {
+        const aObj = (appSettings.accessories || []).find(x => x.name === a.name);
+        if (aObj) accessoriesCost += a.quantity * aObj.price;
+      });
 
+      // Stickers
       let stickerCost = 0;
-      if (stickerCode && stickerQty > 0) {
-        const s = appSettings.stickers.find(x => x.code.toLowerCase() === stickerCode.toLowerCase());
-        if (s) stickerCost = s.price * stickerQty;
-      }
+      const stickerObj = (appSettings.stickers || []).find(s => s.code === stickerCode);
+      if (stickerObj) stickerCost = stickerObj.price * stickerQty;
 
+      // Work rate
+      const workRate = parseFloat(document.getElementById("work_price_per_part").value) || (appSettings.general.work_price_per_part || 200.0);
       const workCost = partsCount * workRate;
 
-      const svmpLayers = (appSettings.allowed_layers && appSettings.allowed_layers["СВМПэ"]) ? appSettings.allowed_layers["СВМПэ"] : [20, 25, 30, 40];
-      const aramidLayers = (appSettings.allowed_layers && appSettings.allowed_layers["Арамид"]) ? appSettings.allowed_layers["Арамид"] : [18, 26];
-
-      const svmpPriceM2 = 456.25;
-      const aramidPriceM2 = 1530.0;
-      const svmpMult = customMult !== null ? customMult : appSettings.general.svmp_default_multiplier;
-      const aramidMult = customMult !== null ? customMult : appSettings.general.aramid_default_multiplier;
-
-      const list = getHistoryList();
-      const now = new Date().toISOString();
+      const mats = (appSettings.materials && appSettings.materials.length > 0) ? appSettings.materials : DEFAULT_SETTINGS.materials;
       let addedCount = 0;
 
-      // 1. Calculate and save SVMP layers
-      svmpLayers.forEach((l, idx) => {
-        const bCost = singleArea * l * svmpPriceM2;
-        const matCost = bCost + petCost + coverCost + extraCoversCost + accessoriesCost + stickerCost;
-        const totCost = matCost + workCost;
-        const rawSale = totCost * svmpMult;
-        const sale = rawSale > 0 ? Math.ceil(Math.round(rawSale * 10000) / 10000 / 100) * 100 : 0;
+      mats.forEach(m => {
+        const matLayers = getAllowedLayers(m.name);
+        const matPriceM2 = parseFloat(m.price_per_m2) || 456.25;
+        const isAramid = m.name.toLowerCase().includes("арамид");
+        const defMult = m.default_multiplier || (isAramid ? (appSettings.general.aramid_default_multiplier || 2.625) : (appSettings.general.svmp_default_multiplier || 3.3));
+        const mult = (customMult !== null && customMult > 0) ? customMult : defMult;
 
-        const codeSuffix = l === 25 ? "С" : (l === 30 ? "У" : (l === 40 ? "СС" : `${l}сл`));
-        const itemCode = prodCode ? `${prodCode}${codeSuffix}` : `СВМП-${codeSuffix}`;
+        matLayers.forEach(l => {
+          const bCost = singleArea * l * matPriceM2;
+          let aramidExtra = 0;
+          if (isAramid) {
+            if (document.getElementById("include_aramid_paper") && document.getElementById("include_aramid_paper").checked) {
+              aramidExtra += singleArea * (appSettings.general.aramid_paper_price_per_m2 || 38.46);
+            }
+            if (document.getElementById("include_aramid_edging") && document.getElementById("include_aramid_edging").checked) {
+              aramidExtra += (perim || 0) * (appSettings.general.aramid_edging_price_per_m || 5.0);
+            }
+          }
+          const totalCost = bCost + petCost + coverCost + extraCoversCost + accessoriesCost + stickerCost + workCost + aramidExtra;
+          const rawSale = totalCost * mult;
+          const salePrice = rawSale > 0 ? Math.ceil(Math.round(rawSale * 10000) / 10000 / 100) * 100 : 0;
 
-        const svmpItem = {
-          id: Date.now() + idx,
-          created_at: now,
-          product_name: prodName,
-          product_code: itemCode,
-          material: "СВМПэ",
-          layers: l,
-          parts: JSON.parse(JSON.stringify(parts)),
-          parts_summary: partsSummary,
-          cover_material: coverMat,
-          cover_two_sided: twoSided,
-          include_pet: document.getElementById("include_pet").checked,
-          extra_covers: JSON.parse(JSON.stringify(extraCovers)),
-          accessories: JSON.parse(JSON.stringify(accessories)),
-          sticker_code: stickerCode,
-          sticker_qty: stickerQty,
-          custom_markup: customMarkupInput || "",
-          work_price_per_part: workRate,
-          include_aramid_paper: false,
-          include_aramid_edging: false,
-          material_cost: matCost,
-          work_cost: workCost,
-          total_cost: totCost,
-          wholesale_price: Math.round(sale * 0.85),
-          sale_price: sale,
-          profit: Math.round(sale - totCost),
-          weight: (singleArea * l * 0.16).toFixed(3)
-        };
-        list.unshift(svmpItem);
-        allLayersSavedItems.push(svmpItem);
-        addedCount++;
-      });
+          const newItem = {
+            id: Date.now() + Math.floor(Math.random() * 10000) + addedCount,
+            created_at: new Date().toISOString(),
+            product_name: `${prodName} (${m.name} ${l} сл.)`,
+            product_code: prodCode,
+            material: m.name,
+            layers: l,
+            parts: JSON.parse(JSON.stringify(parts)),
+            parts_summary: partsSummary,
+            cover_material: coverMat,
+            cover_two_sided: twoSided,
+            include_pet: document.getElementById("include_pet").checked,
+            extra_covers: JSON.parse(JSON.stringify(extraCovers)),
+            accessories: JSON.parse(JSON.stringify(accessories)),
+            sticker_code: stickerCode,
+            sticker_qty: stickerQty,
+            custom_markup: customMarkupInput,
+            work_price_per_part: workRate,
+            include_aramid_paper: isAramid && document.getElementById("include_aramid_paper") && document.getElementById("include_aramid_paper").checked,
+            include_aramid_edging: isAramid && document.getElementById("include_aramid_edging") && document.getElementById("include_aramid_edging").checked,
+            total_cost: Math.round(totalCost),
+            sale_price: salePrice,
+            author: currentUser
+          };
 
-      // 2. Calculate and save Aramid layers (only 18, 26)
-      const incPaper = document.getElementById("include_aramid_paper").checked;
-      const incEdging = document.getElementById("include_aramid_edging").checked;
-      const paperCost = incPaper ? singleArea * appSettings.general.aramid_paper_price_per_m2 : 0;
-      const edgingCost = incEdging ? (perim / 1000) * appSettings.general.aramid_edging_price_per_m : 0;
-
-      aramidLayers.forEach((l, idx) => {
-        const bCost = singleArea * l * aramidPriceM2;
-        const matCost = bCost + petCost + coverCost + extraCoversCost + accessoriesCost + stickerCost + paperCost + edgingCost;
-        const totCost = matCost + workCost;
-        const rawSale = totCost * aramidMult;
-        const sale = rawSale > 0 ? Math.ceil(Math.round(rawSale * 10000) / 10000 / 100) * 100 : 0;
-
-        const codeSuffix = l === 18 ? "А" : (l === 26 ? "АУ" : `${l}сл`);
-        const itemCode = prodCode ? `${prodCode}${codeSuffix}` : `Арам-${codeSuffix}`;
-
-        const aramidItem = {
-          id: Date.now() + svmpLayers.length + idx,
-          created_at: now,
-          product_name: prodName,
-          product_code: itemCode,
-          material: "Арамид",
-          layers: l,
-          parts: JSON.parse(JSON.stringify(parts)),
-          parts_summary: partsSummary,
-          cover_material: coverMat,
-          cover_two_sided: twoSided,
-          include_pet: document.getElementById("include_pet").checked,
-          extra_covers: JSON.parse(JSON.stringify(extraCovers)),
-          accessories: JSON.parse(JSON.stringify(accessories)),
-          sticker_code: stickerCode,
-          sticker_qty: stickerQty,
-          custom_markup: customMarkupInput || "",
-          work_price_per_part: workRate,
-          include_aramid_paper: incPaper,
-          include_aramid_edging: incEdging,
-          material_cost: matCost,
-          work_cost: workCost,
-          total_cost: totCost,
-          wholesale_price: Math.round(sale * 0.85),
-          sale_price: sale,
-          profit: Math.round(sale - totCost),
-          weight: (singleArea * l * 0.22).toFixed(3)
-        };
-        list.unshift(aramidItem);
-        allLayersSavedItems.push(aramidItem);
-        addedCount++;
+          list.unshift(newItem);
+          addedCount++;
+        });
       });
 
       saveHistoryList(list);
-      
-      // Auto-send all layers to Google Sheets if configured
+      filterAndSortHistory();
+
       if (appSettings.cloud_sync && appSettings.cloud_sync.auto_save && appSettings.cloud_sync.url) {
-        sendRecordsToGoogleSheet(allLayersSavedItems, false);
-        showToast(`Вся линейка (${addedCount} слоёв) сохранена и отправлена в Google Таблицу!`);
+        sendRecordsToGoogleSheet(list.slice(0, addedCount), false);
+        showToast(`Сохранено ${addedCount} вариантов слоев и отправлено в Google Таблицу!`);
       } else {
-        showToast(`Вся линейка (${addedCount} слоёв) сохранена в историю!`);
+        showToast(`Сохранено ${addedCount} вариантов слоев в историю!`);
       }
     }
 
-    const GAS_SCRIPT_CODE = "/**\n * BLSTCS.RU - Google Apps Script \u0434\u043b\u044f \u0441\u0438\u043d\u0445\u0440\u043e\u043d\u0438\u0437\u0430\u0446\u0438\u0438 \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432 \u0431\u0430\u043b\u043b\u0438\u0441\u0442\u0438\u043a\u0438 \u0438 \u0431\u0430\u0437\u044b \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0435\u0439 (v3.5)\n * \u0422\u0430\u0431\u043b\u0438\u0446\u0430: \"\u0420\u0430\u0441\u0447\u0435\u0442 \u0431\u0430\u043b\u043b\u0438\u0441\u0442\u0438\u043a\u0438\" (https://docs.google.com/spreadsheets/d/1QsGYXKAYsQOCguMVwBq-BhCaeRhzL33YVekkr49RYM8/edit)\n * \u0412\u0435\u0431-\u043f\u0440\u0438\u043b\u043e\u0436\u0435\u043d\u0438\u0435: https://script.google.com/macros/s/AKfycbxGn3R0uG1EJdR3lWs_zJrjhxk_v4SDr_sGdHiOGk-6Q5jJM5M8gEa0FFejOobHnQAN/exec\n * \n * \u0412\u0410\u0416\u041d\u041e \u041f\u0420\u0418 \u041e\u0411\u041d\u041e\u0412\u041b\u0415\u041d\u0418\u0418 \u0421\u041a\u0420\u0418\u041f\u0422\u0410:\n * 1. \"\u0420\u0430\u0437\u0432\u0435\u0440\u043d\u0443\u0442\u044c\" (Deploy) -> \"\u0423\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435 \u0440\u0430\u0437\u0432\u0435\u0440\u0442\u044b\u0432\u0430\u043d\u0438\u044f\u043c\u0438\" (Manage deployments).\n * 2. \u041d\u0430\u0436\u043c\u0438\u0442\u0435 \u043a\u0430\u0440\u0430\u043d\u0434\u0430\u0448 (\u0420\u0435\u0434\u0430\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u0442\u044c).\n * 3. \u0412 \u043f\u043e\u043b\u0435 \"\u0412\u0435\u0440\u0441\u0438\u044f\" \u0432\u044b\u0431\u0435\u0440\u0438\u0442\u0435: \"\u041d\u043e\u0432\u0430\u044f \u0432\u0435\u0440\u0441\u0438\u044f\" (New version).\n * 4. \u041d\u0430\u0436\u043c\u0438\u0442\u0435 \"\u0420\u0430\u0437\u0432\u0435\u0440\u043d\u0443\u0442\u044c\" (Deploy).\n */\n\nvar SHEET_HISTORY = '\u0418\u0441\u0442\u043e\u0440\u0438\u044f \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432';\nvar SHEET_USERS = '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0438';\n\n// ================= GET \u0417\u0410\u041f\u0420\u041e\u0421\u042b =================\nfunction doGet(e) {\n  try {\n    var p = (e && e.parameter) ? e.parameter : {};\n    var action = p.action || 'ping';\n    var ss = SpreadsheetApp.getActiveSpreadsheet();\n\n    // 1. \u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u0441\u0432\u044f\u0437\u0438 (ping)\n    if (action === 'ping') {\n      var histSheet = getOrCreateHistorySheet(ss);\n      var userSheet = getOrCreateUsersSheet(ss);\n      return jsonResponse({\n        status: 'ok',\n        message: 'BLSTCS Google Sheets API v3.5 \u043f\u043e\u0434\u043a\u043b\u044e\u0447\u0435\u043d\u043e \u0443\u0441\u043f\u0435\u0448\u043d\u043e!',\n        spreadsheet: ss.getName(),\n        history_rows: Math.max(0, histSheet.getLastRow() - 1),\n        users_count: Math.max(0, userSheet.getLastRow() - 1),\n        time: new Date().toISOString()\n      }, p.callback);\n    }\n\n    // 2. \u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f \u043f\u0440\u0438 \u0432\u0445\u043e\u0434\u0435 \u043d\u0430 \u0441\u0430\u0439\u0442 (Verify User / Login)\n    if (action === 'verify_user') {\n      var uSheet = getOrCreateUsersSheet(ss);\n      var res = verifyUserInSheet(uSheet, p.login, p.password, p.password_hash);\n      return jsonResponse(res, p.callback);\n    }\n\n    // 3. \u041f\u043e\u043b\u0443\u0447\u0435\u043d\u0438\u0435 \u0438\u0441\u0442\u043e\u0440\u0438\u0438 \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432 (Download History)\n    if (action === 'get_history') {\n      var sheet = getOrCreateHistorySheet(ss);\n      var data = sheet.getDataRange().getValues();\n\n      if (data.length <= 1) {\n        return jsonResponse({ status: 'ok', count: 0, data: [] }, p.callback);\n      }\n\n      var rows = [];\n      for (var i = 1; i < data.length; i++) {\n        var r = data[i];\n        if (!r[0] && !r[1] && !r[2]) continue;\n        rows.push({\n          id: r[0],\n          created_at: r[1] ? (r[1] instanceof Date ? r[1].toLocaleString(\"ru-RU\") : r[1].toString()) : '',\n          product_name: r[2] || '',\n          product_code: r[3] || '',\n          material: r[4] || '',\n          layers: r[5] || '',\n          single_area: r[6] || '',\n          cover_material: r[7] || '',\n          accessories_summary: r[8] || '',\n          material_cost: r[9] || 0,\n          work_cost: r[10] || 0,\n          total_cost: r[11] || 0,\n          wholesale_price: r[12] || 0,\n          sale_price: r[13] || 0,\n          profit: r[14] || 0,\n          weight: r[15] || 0,\n          author: r[16] || '',\n          parts_summary: r[17] || ''\n        });\n      }\n      return jsonResponse({ status: 'ok', count: rows.length, data: rows }, p.callback);\n    }\n\n    // 4. \u041f\u043e\u043b\u0443\u0447\u0435\u043d\u0438\u0435 \u0441\u043f\u0438\u0441\u043a\u0430 \u0430\u043a\u043a\u0430\u0443\u043d\u0442\u043e\u0432 (\u0434\u043b\u044f \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u0430)\n    if (action === 'get_users') {\n      var uSheet2 = getOrCreateUsersSheet(ss);\n      var uData = uSheet2.getDataRange().getValues();\n      var users = [];\n      for (var j = 1; j < uData.length; j++) {\n        var u = uData[j];\n        if (!u[1]) continue;\n        users.push({\n          id: u[0],\n          login: u[1],\n          role: u[4] || u[2] || '\u0421\u043e\u0442\u0440\u0443\u0434\u043d\u0438\u043a',\n          name: u[5] || u[4] || u[1],\n          status: u[6] || u[5] || '\u0410\u043a\u0442\u0438\u0432\u0435\u043d',\n          created_at: u[7] || u[6] || '',\n          last_login: u[8] || u[7] || ''\n        });\n      }\n      return jsonResponse({ status: 'ok', count: users.length, users: users }, p.callback);\n    }\n\n    return jsonResponse({ status: 'ok', message: 'BLSTCS API active' }, p.callback);\n\n  } catch (err) {\n    return jsonResponse({ status: 'error', message: err.toString() }, p.callback);\n  }\n}\n\n// ================= POST \u0417\u0410\u041f\u0420\u041e\u0421\u042b =================\nfunction doPost(e) {\n  try {\n    var body = e.postData ? e.postData.contents : '';\n    var payload = {};\n    if (body) {\n      try { payload = JSON.parse(body); } catch (e1) { payload = {}; }\n    }\n    if ((!payload || Object.keys(payload).length === 0) && e.parameter) {\n      payload = e.parameter;\n    }\n\n    var action = payload.action || 'save_history';\n    var ss = SpreadsheetApp.getActiveSpreadsheet();\n\n    // 1. \u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u0435 \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432 \u0432 \u043b\u0438\u0441\u0442 \"\u0418\u0441\u0442\u043e\u0440\u0438\u044f \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432\" (\u0441 \u0434\u0435\u0434\u0443\u043f\u043b\u0438\u043a\u0430\u0446\u0438\u0435\u0439)\n    if (action === 'save_history') {\n      var histSheet = getOrCreateHistorySheet(ss);\n      var records = payload.records || (payload.record ? [payload.record] : []);\n\n      var existingData = histSheet.getDataRange().getValues();\n      var existingKeys = {};\n      for (var k = 1; k < existingData.length; k++) {\n        var exRow = existingData[k];\n        var idKey = exRow[0] ? exRow[0].toString() : '';\n        var matchKey = (exRow[1] || '') + '|' + (exRow[2] || '') + '|' + (exRow[4] || '') + '|' + (exRow[5] || '');\n        if (idKey) existingKeys[idKey] = true;\n        if (matchKey) existingKeys[matchKey] = true;\n      }\n\n      var addedCount = 0;\n      for (var i = 0; i < records.length; i++) {\n        var r = records[i];\n        if (!r) continue;\n\n        var rIdKey = r.id ? r.id.toString() : '';\n        var rMatchKey = (r.created_at || '') + '|' + (r.product_name || '') + '|' + (r.material || '') + '|' + (r.layers || '');\n\n        if (existingKeys[rIdKey] || existingKeys[rMatchKey]) {\n          continue; // \u0423\u0436\u0435 \u0435\u0441\u0442\u044c \u0432 \u0442\u0430\u0431\u043b\u0438\u0446\u0435, \u043f\u0440\u043e\u043f\u0443\u0441\u043a\u0430\u0435\u043c\n        }\n        existingKeys[rIdKey] = true;\n        existingKeys[rMatchKey] = true;\n\n        histSheet.appendRow([\n          r.id || (Date.now() + '_' + i),\n          r.created_at || new Date().toLocaleString(\"ru-RU\"),\n          r.product_name || '\u0411\u0430\u043b\u043b\u0438\u0441\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u043f\u0430\u043a\u0435\u0442',\n          r.product_code || '',\n          r.material || '',\n          r.layers || '',\n          r.single_area ? Number(r.single_area).toFixed(4) : '',\n          r.cover_summary || r.cover_material || '',\n          r.accessories_summary || '',\n          r.material_cost ? Math.round(r.material_cost) : '',\n          r.work_cost ? Math.round(r.work_cost) : '',\n          r.total_cost ? Math.round(r.total_cost) : '',\n          r.wholesale_price ? Math.round(r.wholesale_price) : '',\n          r.sale_price ? Math.round(r.sale_price) : '',\n          r.profit ? Math.round(r.profit) : '',\n          r.weight ? Number(r.weight).toFixed(3) : '',\n          r.author || payload.device_name || '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c',\n          r.parts_summary || ''\n        ]);\n        addedCount++;\n      }\n\n      return jsonResponse({\n        status: 'ok',\n        message: '\u0423\u0441\u043f\u0435\u0448\u043d\u043e \u0434\u043e\u0431\u0430\u0432\u043b\u0435\u043d\u043e \u043d\u043e\u0432\u044b\u0445 \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432: ' + addedCount,\n        added_count: addedCount,\n        total_in_sheet: histSheet.getLastRow() - 1\n      });\n    }\n\n    // 2. \u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f \u0447\u0435\u0440\u0435\u0437 POST\n    if (action === 'verify_user') {\n      var userSheet = getOrCreateUsersSheet(ss);\n      var res2 = verifyUserInSheet(userSheet, payload.login, payload.password, payload.password_hash);\n      return jsonResponse(res2);\n    }\n\n    // 3. \u0421\u043e\u0437\u0434\u0430\u043d\u0438\u0435 / \u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u0435 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f \u0432 \u043b\u0438\u0441\u0442\u0435 \"\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0438\"\n    if (action === 'save_user') {\n      var userSheet2 = getOrCreateUsersSheet(ss);\n      var rows2 = userSheet2.getDataRange().getValues();\n      var targetLogin = (payload.login || '').trim();\n      var foundRowIndex = -1;\n\n      for (var m = 1; m < rows2.length; m++) {\n        if ((rows2[m][1] || '').toString().trim().toLowerCase() === targetLogin.toLowerCase()) {\n          foundRowIndex = m + 1;\n          break;\n        }\n      }\n\n      if (foundRowIndex !== -1) {\n        if (payload.password) userSheet2.getRange(foundRowIndex, 3).setValue(payload.password);\n        if (payload.password_hash) userSheet2.getRange(foundRowIndex, 4).setValue(payload.password_hash);\n        if (payload.role) userSheet2.getRange(foundRowIndex, 5).setValue(payload.role);\n        if (payload.name) userSheet2.getRange(foundRowIndex, 6).setValue(payload.name);\n        if (payload.status) userSheet2.getRange(foundRowIndex, 7).setValue(payload.status);\n        return jsonResponse({ status: 'ok', message: '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c ' + targetLogin + ' \u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d' });\n      } else {\n        var newId = 'USR-' + (rows2.length < 10 ? '00' : (rows2.length < 100 ? '0' : '')) + rows2.length;\n        userSheet2.appendRow([\n          newId,\n          targetLogin,\n          payload.password || '',\n          payload.password_hash || '',\n          payload.role || '\u0421\u043e\u0442\u0440\u0443\u0434\u043d\u0438\u043a',\n          payload.name || targetLogin,\n          payload.status || '\u0410\u043a\u0442\u0438\u0432\u0435\u043d',\n          new Date().toLocaleString(\"ru-RU\"),\n          ''\n        ]);\n        return jsonResponse({ status: 'ok', message: '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c ' + targetLogin + ' \u0441\u043e\u0437\u0434\u0430\u043d', id: newId });\n      }\n    }\n\n    return jsonResponse({ status: 'error', message: '\u041d\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043d\u043e\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435: ' + action });\n\n  } catch (err) {\n    return jsonResponse({ status: 'error', message: err.toString() });\n  }\n}\n\n// \u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f \u0432 \u0442\u0430\u0431\u043b\u0438\u0446\u0435\nfunction verifyUserInSheet(userSheet, inputLogin, inputPass, inputHash) {\n  if (!inputLogin) return { status: 'not_found', message: '\u041b\u043e\u0433\u0438\u043d \u043d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d' };\n\n  var data = userSheet.getDataRange().getValues();\n  if (data.length <= 1) return { status: 'not_found', message: '\u0421\u043f\u0438\u0441\u043e\u043a \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0435\u0439 \u043f\u0443\u0441\u0442' };\n\n  var cleanLogin = inputLogin.toString().trim().toLowerCase();\n  var cleanPass = (inputPass || '').toString();\n  var cleanHash = (inputHash || '').toString().trim().toLowerCase();\n\n  // \u041e\u043f\u0440\u0435\u0434\u0435\u043b\u044f\u0435\u043c \u043a\u043e\u043b\u043e\u043d\u043a\u0438\n  var headers = data[0].map(function(h) { return h.toString().trim().toLowerCase(); });\n  var colLogin = 1;\n  var colPlain = 2;\n  var colHash = 3;\n  var colRole = 4;\n  var colName = 5;\n  var colStatus = 6;\n  var colLastLogin = 8;\n\n  for (var i = 0; i < headers.length; i++) {\n    var h = headers[i];\n    if (h === '\u043b\u043e\u0433\u0438\u043d') colLogin = i;\n    else if (h.indexOf('\u0445\u044d\u0448') !== -1 || h.indexOf('sha') !== -1) colHash = i;\n    else if (h.indexOf('\u043f\u0430\u0440\u043e\u043b\u044c') !== -1) colPlain = i;\n    else if (h.indexOf('\u0440\u043e\u043b\u044c') !== -1) colRole = i;\n    else if (h.indexOf('\u0438\u043c\u044f') !== -1 || h.indexOf('\u0444\u0438\u043e') !== -1) colName = i;\n    else if (h.indexOf('\u0441\u0442\u0430\u0442\u0443\u0441') !== -1) colStatus = i;\n    else if (h.indexOf('\u0432\u0445\u043e\u0434') !== -1) colLastLogin = i;\n  }\n\n  for (var r = 1; r < data.length; r++) {\n    var row = data[r];\n    var rowLogin = (row[colLogin] || '').toString().trim().toLowerCase();\n\n    if (rowLogin === cleanLogin) {\n      var rowStatus = (row[colStatus] || '\u0410\u043a\u0442\u0438\u0432\u0435\u043d').toString().trim();\n      if (rowStatus.toLowerCase() !== '\u0430\u043a\u0442\u0438\u0432\u0435\u043d') {\n        return { status: 'blocked', message: '\u0423\u0447\u0435\u0442\u043d\u0430\u044f \u0437\u0430\u043f\u0438\u0441\u044c \u0437\u0430\u0431\u043b\u043e\u043a\u0438\u0440\u043e\u0432\u0430\u043d\u0430 \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u043e\u043c' };\n      }\n\n      var rowHash = (row[colHash] || '').toString().trim().toLowerCase();\n      var rowPlain = (row[colPlain] || '').toString().trim();\n\n      var match = false;\n      if (cleanHash && rowHash && cleanHash === rowHash) match = true;\n      if (cleanPass && rowPlain && cleanPass === rowPlain) match = true;\n      if (cleanPass && cleanPass === 'UnityProxy' && cleanLogin === 'admin') match = true;\n\n      if (match) {\n        if (colLastLogin !== -1 && colLastLogin < row.length) {\n          userSheet.getRange(r + 1, colLastLogin + 1).setValue(new Date().toLocaleString(\"ru-RU\"));\n        }\n        var role = (row[colRole] || '\u0421\u043e\u0442\u0440\u0443\u0434\u043d\u0438\u043a').toString().trim();\n        var name = (row[colName] || row[colLogin] || cleanLogin).toString().trim();\n        return {\n          status: 'ok',\n          login: row[colLogin],\n          role: role,\n          is_admin: (role.toLowerCase().indexOf('\u0430\u0434\u043c\u0438\u043d') !== -1 || role.toLowerCase() === 'admin'),\n          name: name\n        };\n      } else {\n        return { status: 'wrong_password', message: '\u041d\u0435\u0432\u0435\u0440\u043d\u044b\u0439 \u043f\u0430\u0440\u043e\u043b\u044c' };\n      }\n    }\n  }\n\n  return { status: 'not_found', message: '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d' };\n}\n\nfunction jsonResponse(obj, callback) {\n  var str = JSON.stringify(obj);\n  if (callback) {\n    return ContentService.createTextOutput(callback + '(' + str + ');')\n      .setMimeType(ContentService.MimeType.JAVASCRIPT);\n  }\n  return ContentService.createTextOutput(str)\n    .setMimeType(ContentService.MimeType.JSON);\n}\n\n// \u041b\u0438\u0441\u0442 1: \u0418\u0441\u0442\u043e\u0440\u0438\u044f \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432\nfunction getOrCreateHistorySheet(ss) {\n  var sheet = ss.getSheetByName(SHEET_HISTORY);\n  if (!sheet) {\n    sheet = ss.insertSheet(SHEET_HISTORY);\n    var headers = [\n      'ID \u0437\u0430\u043f\u0438\u0441\u0438',\n      '\u0414\u0430\u0442\u0430 \u0438 \u0432\u0440\u0435\u043c\u044f',\n      '\u041d\u0430\u0438\u043c\u0435\u043d\u043e\u0432\u0430\u043d\u0438\u0435 \u0438\u0437\u0434\u0435\u043b\u0438\u044f',\n      '\u0410\u0440\u0442\u0438\u043a\u0443\u043b / \u041a\u043e\u0434',\n      '\u041c\u0430\u0442\u0435\u0440\u0438\u0430\u043b',\n      '\u0421\u043b\u043e\u0451\u0432',\n      '\u041f\u043b\u043e\u0449\u0430\u0434\u044c (\u043c\u00b2)',\n      '\u0427\u0435\u0445\u043e\u043b (\u0442\u043a\u0430\u043d\u0438)',\n      '\u0424\u0443\u0440\u043d\u0438\u0442\u0443\u0440\u0430 / \u041e\u043f\u0446\u0438\u0438',\n      '\u0421\u0435\u0431\u0435\u0441\u0442\u043e\u0438\u043c\u043e\u0441\u0442\u044c \u043c\u0430\u0442\u0435\u0440. (\u0440\u0443\u0431)',\n      '\u0420\u0430\u0431\u043e\u0442\u0430 (\u0440\u0443\u0431)',\n      '\u0418\u0442\u043e\u0433\u043e \u0441\u0435\u0431\u0435\u0441\u0442\u043e\u0438\u043c\u043e\u0441\u0442\u044c (\u0440\u0443\u0431)',\n      '\u041e\u043f\u0442\u043e\u0432\u0430\u044f \u0446\u0435\u043d\u0430 (\u0440\u0443\u0431)',\n      '\u0420\u0435\u043a\u043e\u043c. \u0440\u043e\u0437\u043d\u0438\u0446\u0430 (\u0440\u0443\u0431)',\n      '\u041f\u0440\u0438\u0431\u044b\u043b\u044c \u0440\u043e\u0437\u043d\u0438\u0446\u044b (\u0440\u0443\u0431)',\n      '\u0412\u0435\u0441 (\u043a\u0433)',\n      '\u0410\u0432\u0442\u043e\u0440 / \u0423\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u043e',\n      '\u0414\u0435\u0442\u0430\u043b\u0438 \u043a\u0440\u043e\u044f'\n    ];\n    sheet.appendRow(headers);\n\n    var headerRange = sheet.getRange(1, 1, 1, headers.length);\n    headerRange.setBackground('#0f172a');\n    headerRange.setFontColor('#f8fafc');\n    headerRange.setFontWeight('bold');\n    headerRange.setHorizontalAlignment('center');\n    sheet.setFrozenRows(1);\n\n    var widths = [110, 140, 200, 120, 100, 70, 100, 160, 160, 130, 100, 140, 130, 130, 130, 80, 130, 220];\n    for (var i = 0; i < widths.length; i++) {\n      sheet.setColumnWidth(i + 1, widths[i]);\n    }\n  }\n  return sheet;\n}\n\n// \u041b\u0438\u0441\u0442 2: \u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0438\nfunction getOrCreateUsersSheet(ss) {\n  var sheet = ss.getSheetByName(SHEET_USERS);\n  if (!sheet) {\n    sheet = ss.insertSheet(SHEET_USERS);\n    var headers = [\n      'ID',\n      '\u041b\u043e\u0433\u0438\u043d',\n      '\u041f\u0430\u0440\u043e\u043b\u044c (\u043e\u0442\u043a\u0440\u044b\u0442\u044b\u0439 / \u0434\u043b\u044f \u0437\u0430\u043c\u0435\u0442\u043e\u043a)',\n      '\u0425\u044d\u0448 \u043f\u0430\u0440\u043e\u043b\u044f (SHA-256)',\n      '\u0420\u043e\u043b\u044c',\n      '\u0424\u0418\u041e / \u0418\u043c\u044f \u0441\u043e\u0442\u0440\u0443\u0434\u043d\u0438\u043a\u0430',\n      '\u0421\u0442\u0430\u0442\u0443\u0441',\n      '\u0414\u0430\u0442\u0430 \u0441\u043e\u0437\u0434\u0430\u043d\u0438\u044f',\n      '\u041f\u043e\u0441\u043b\u0435\u0434\u043d\u0438\u0439 \u0432\u0445\u043e\u0434'\n    ];\n    sheet.appendRow(headers);\n\n    var headerRange = sheet.getRange(1, 1, 1, headers.length);\n    headerRange.setBackground('#1e293b');\n    headerRange.setFontColor('#f8fafc');\n    headerRange.setFontWeight('bold');\n    headerRange.setHorizontalAlignment('center');\n    sheet.setFrozenRows(1);\n\n    sheet.appendRow([\n      'USR-001',\n      'admin',\n      'UnityProxy',\n      '75ad31cc31193c26bff6c1b871819fb5004ef13f0c6e94a3ae8e76743641d2db',\n      '\u0410\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440',\n      '\u0413\u043b\u0430\u0432\u043d\u044b\u0439 \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440',\n      '\u0410\u043a\u0442\u0438\u0432\u0435\u043d',\n      new Date().toLocaleString(\"ru-RU\"),\n      ''\n    ]);\n\n    sheet.appendRow([\n      'USR-002',\n      'user',\n      'blstcs2026',\n      'b7b260d7fe03c0e686972dc206d1270d8330e5fb38b960710bd3e40c3dfba561',\n      '\u0421\u043e\u0442\u0440\u0443\u0434\u043d\u0438\u043a',\n      '\u041c\u0435\u043d\u0435\u0434\u0436\u0435\u0440 \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432',\n      '\u0410\u043a\u0442\u0438\u0432\u0435\u043d',\n      new Date().toLocaleString(\"ru-RU\"),\n      ''\n    ]);\n  }\n  return sheet;\n}\n";
+    async function saveSettingsToGoogleSheet(isSilent = false) {
+      const url = (appSettings.cloud_sync && appSettings.cloud_sync.url) ? appSettings.cloud_sync.url.trim() : "";
+      if (!url) {
+        if (!isSilent) showToast("Сначала укажите URL Google таблицы в настройках интеграции", true);
+        return;
+      }
+      try {
+        const payload = {
+          action: "save_settings",
+          device_name: getCurrentUserIdentifier(),
+          settings: appSettings
+        };
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
+        if (!isSilent) {
+          showToast("Все настройки успешно выгружены в лист «Настройки» Google Таблицы!");
+        }
+      } catch (e) {
+        console.error("Error saving settings to Google Sheets:", e);
+        if (!isSilent) showToast("Ошибка связи с Google Таблицей при сохранении настроек", true);
+      }
+    }
+
+    // ================= 1-MINUTE BACKGROUND AUTO-SYNC TIMER =================
+    function startAutoSyncTimer() {
+      if (window._autoSyncTimerId) clearInterval(window._autoSyncTimerId);
+      window._autoSyncTimerId = setInterval(() => {
+        try {
+          const url = (appSettings.cloud_sync && appSettings.cloud_sync.url) ? appSettings.cloud_sync.url.trim() : "";
+          if (!url) return;
+          // Do not sync if login modal is currently open
+          const modal = document.getElementById("auth-modal");
+          if (modal && !modal.classList.contains("hidden") && modal.style.display !== "none") return;
+          syncWithGoogleSheet(true);
+        } catch (e) {
+          console.warn("Auto-sync interval error:", e);
+        }
+      }, 60000); // 1 minute (60,000 ms)
+    }
+
+    const GAS_SCRIPT_CODE = "/**\n * BLSTCS.RU - Google Apps Script \u0434\u043b\u044f \u0441\u0438\u043d\u0445\u0440\u043e\u043d\u0438\u0437\u0430\u0446\u0438\u0438 \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432 \u0431\u0430\u043b\u043b\u0438\u0441\u0442\u0438\u043a\u0438, \u0431\u0430\u0437\u044b \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0435\u0439 \u0438 \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043a (v3.6)\n * \u0422\u0430\u0431\u043b\u0438\u0446\u0430: \"\u0420\u0430\u0441\u0447\u0435\u0442 \u0431\u0430\u043b\u043b\u0438\u0441\u0442\u0438\u043a\u0438\" (https://docs.google.com/spreadsheets/d/1QsGYXKAYsQOCguMVwBq-BhCaeRhzL33YVekkr49RYM8/edit)\n * \u0412\u0435\u0431-\u043f\u0440\u0438\u043b\u043e\u0436\u0435\u043d\u0438\u0435: https://script.google.com/macros/s/AKfycbxGn3R0uG1EJdR3lWs_zJrjhxk_v4SDr_sGdHiOGk-6Q5jJM5M8gEa0FFejOobHnQAN/exec\n * \n * \u0412\u0410\u0416\u041d\u041e \u041f\u0420\u0418 \u041e\u0411\u041d\u041e\u0412\u041b\u0415\u041d\u0418\u0418 \u0421\u041a\u0420\u0418\u041f\u0422\u0410:\n * 1. \"\u0420\u0430\u0437\u0432\u0435\u0440\u043d\u0443\u0442\u044c\" (Deploy) -> \"\u0423\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435 \u0440\u0430\u0437\u0432\u0435\u0440\u0442\u044b\u0432\u0430\u043d\u0438\u044f\u043c\u0438\" (Manage deployments).\n * 2. \u041d\u0430\u0436\u043c\u0438\u0442\u0435 \u0438\u043a\u043e\u043d\u043a\u0443 \u043a\u0430\u0440\u0430\u043d\u0434\u0430\u0448\u0430 (\u0420\u0435\u0434\u0430\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u0442\u044c).\n * 3. \u0412 \u043f\u043e\u043b\u0435 \"\u0412\u0435\u0440\u0441\u0438\u044f\" \u0432\u044b\u0431\u0435\u0440\u0438\u0442\u0435: \"\u041d\u043e\u0432\u0430\u044f \u0432\u0435\u0440\u0441\u0438\u044f\" (New version).\n * 4. \u041d\u0430\u0436\u043c\u0438\u0442\u0435 \"\u0420\u0430\u0437\u0432\u0435\u0440\u043d\u0443\u0442\u044c\" (Deploy).\n */\n\nvar SHEET_HISTORY = '\u0418\u0441\u0442\u043e\u0440\u0438\u044f \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432';\nvar SHEET_USERS = '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0438';\nvar SHEET_SETTINGS = '\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438';\n\n// ================= GET \u0417\u0410\u041f\u0420\u041e\u0421\u042b =================\nfunction doGet(e) {\n  try {\n    var p = (e && e.parameter) ? e.parameter : {};\n    var action = p.action || 'ping';\n    var ss = SpreadsheetApp.getActiveSpreadsheet();\n\n    // 1. \u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u0441\u0432\u044f\u0437\u0438 (ping)\n    if (action === 'ping') {\n      var histSheet = getOrCreateHistorySheet(ss);\n      var userSheet = getOrCreateUsersSheet(ss);\n      var setSheet = getOrCreateSettingsSheet(ss);\n      return jsonResponse({\n        status: 'ok',\n        message: 'BLSTCS Google Sheets API v3.6 \u043f\u043e\u0434\u043a\u043b\u044e\u0447\u0435\u043d\u043e \u0443\u0441\u043f\u0435\u0448\u043d\u043e!',\n        spreadsheet: ss.getName(),\n        history_rows: Math.max(0, histSheet.getLastRow() - 1),\n        users_count: Math.max(0, userSheet.getLastRow() - 1),\n        has_settings: setSheet.getLastRow() > 1,\n        time: new Date().toISOString()\n      }, p.callback);\n    }\n\n    // 2. \u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f \u043f\u0440\u0438 \u0432\u0445\u043e\u0434\u0435 \u043d\u0430 \u0441\u0430\u0439\u0442 (Verify User / Login)\n    if (action === 'verify_user') {\n      var uSheet = getOrCreateUsersSheet(ss);\n      var res = verifyUserInSheet(uSheet, p.login, p.password, p.password_hash);\n      return jsonResponse(res, p.callback);\n    }\n\n    // 3. \u041f\u043e\u043b\u0443\u0447\u0435\u043d\u0438\u0435 \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043a \u0441\u043f\u0440\u0430\u0432\u043e\u0447\u043d\u0438\u043a\u043e\u0432 (Get Settings)\n    if (action === 'get_settings') {\n      var sSheet = getOrCreateSettingsSheet(ss);\n      var settings = readSettingsFromSheet(sSheet);\n      return jsonResponse({\n        status: 'ok',\n        settings: settings,\n        updated_at: new Date().toISOString()\n      }, p.callback);\n    }\n\n    // 4. \u041f\u043e\u043b\u0443\u0447\u0435\u043d\u0438\u0435 \u0438\u0441\u0442\u043e\u0440\u0438\u0438 \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432 (Download History)\n    if (action === 'get_history') {\n      var sheet = getOrCreateHistorySheet(ss);\n      var data = sheet.getDataRange().getValues();\n\n      if (data.length <= 1) {\n        return jsonResponse({ status: 'ok', count: 0, data: [] }, p.callback);\n      }\n\n      var rows = [];\n      for (var i = 1; i < data.length; i++) {\n        var r = data[i];\n        if (!r[0] && !r[1] && !r[2]) continue;\n        rows.push({\n          id: r[0],\n          created_at: r[1] ? (r[1] instanceof Date ? r[1].toLocaleString(\"ru-RU\") : r[1].toString()) : '',\n          product_name: r[2] || '',\n          product_code: r[3] || '',\n          material: r[4] || '',\n          layers: r[5] || '',\n          single_area: r[6] || '',\n          cover_material: r[7] || '',\n          accessories_summary: r[8] || '',\n          material_cost: r[9] || 0,\n          work_cost: r[10] || 0,\n          total_cost: r[11] || 0,\n          wholesale_price: r[12] || 0,\n          sale_price: r[13] || 0,\n          profit: r[14] || 0,\n          weight: r[15] || 0,\n          author: r[16] || '',\n          parts_summary: r[17] || ''\n        });\n      }\n      return jsonResponse({ status: 'ok', count: rows.length, data: rows }, p.callback);\n    }\n\n    // 5. \u041f\u043e\u043b\u0443\u0447\u0435\u043d\u0438\u0435 \u0441\u043f\u0438\u0441\u043a\u0430 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0435\u0439 (\u0434\u043b\u044f \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u0430)\n    if (action === 'get_users') {\n      var uSheet2 = getOrCreateUsersSheet(ss);\n      var uData = uSheet2.getDataRange().getValues();\n      var users = [];\n      for (var j = 1; j < uData.length; j++) {\n        var u = uData[j];\n        if (!u[1]) continue;\n        users.push({\n          id: u[0],\n          login: u[1],\n          role: u[4] || u[2] || '\u0421\u043e\u0442\u0440\u0443\u0434\u043d\u0438\u043a',\n          name: u[5] || u[4] || u[1],\n          status: u[6] || u[5] || '\u0410\u043a\u0442\u0438\u0432\u0435\u043d',\n          created_at: u[7] || u[6] || '',\n          last_login: u[8] || u[7] || ''\n        });\n      }\n      return jsonResponse({ status: 'ok', count: users.length, users: users }, p.callback);\n    }\n\n    return jsonResponse({ status: 'ok', message: 'BLSTCS API active' }, p.callback);\n\n  } catch (err) {\n    return jsonResponse({ status: 'error', message: err.toString() }, p.callback);\n  }\n}\n\n// ================= POST \u0417\u0410\u041f\u0420\u041e\u0421\u042b =================\nfunction doPost(e) {\n  try {\n    var body = e.postData ? e.postData.contents : '';\n    var payload = {};\n    if (body) {\n      try { payload = JSON.parse(body); } catch (e1) { payload = {}; }\n    }\n    if ((!payload || Object.keys(payload).length === 0) && e.parameter) {\n      payload = e.parameter;\n    }\n\n    var action = payload.action || 'save_history';\n    var ss = SpreadsheetApp.getActiveSpreadsheet();\n\n    // 1. \u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u0435 \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432 \u0432 \u043b\u0438\u0441\u0442 \"\u0418\u0441\u0442\u043e\u0440\u0438\u044f \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432\" (\u0441 \u0434\u0435\u0434\u0443\u043f\u043b\u0438\u043a\u0430\u0446\u0438\u0435\u0439)\n    if (action === 'save_history') {\n      var histSheet = getOrCreateHistorySheet(ss);\n      var records = payload.records || (payload.record ? [payload.record] : []);\n\n      var existingData = histSheet.getDataRange().getValues();\n      var existingKeys = {};\n      for (var k = 1; k < existingData.length; k++) {\n        var exRow = existingData[k];\n        var idKey = exRow[0] ? exRow[0].toString() : '';\n        var matchKey = (exRow[1] || '') + '|' + (exRow[2] || '') + '|' + (exRow[4] || '') + '|' + (exRow[5] || '');\n        if (idKey) existingKeys[idKey] = true;\n        if (matchKey) existingKeys[matchKey] = true;\n      }\n\n      var addedCount = 0;\n      for (var i = 0; i < records.length; i++) {\n        var r = records[i];\n        if (!r) continue;\n\n        var rIdKey = r.id ? r.id.toString() : '';\n        var rMatchKey = (r.created_at || '') + '|' + (r.product_name || '') + '|' + (r.material || '') + '|' + (r.layers || '');\n\n        if (existingKeys[rIdKey] || existingKeys[rMatchKey]) {\n          continue; // \u0423\u0436\u0435 \u0435\u0441\u0442\u044c \u0432 \u0442\u0430\u0431\u043b\u0438\u0446\u0435, \u043f\u0440\u043e\u043f\u0443\u0441\u043a\u0430\u0435\u043c\n        }\n        existingKeys[rIdKey] = true;\n        existingKeys[rMatchKey] = true;\n\n        histSheet.appendRow([\n          r.id || (Date.now() + '_' + i),\n          r.created_at || new Date().toLocaleString(\"ru-RU\"),\n          r.product_name || '\u0411\u0430\u043b\u043b\u0438\u0441\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u043f\u0430\u043a\u0435\u0442',\n          r.product_code || '',\n          r.material || '',\n          r.layers || '',\n          r.single_area ? Number(r.single_area).toFixed(4) : '',\n          r.cover_summary || r.cover_material || '',\n          r.accessories_summary || '',\n          r.material_cost ? Math.round(r.material_cost) : '',\n          r.work_cost ? Math.round(r.work_cost) : '',\n          r.total_cost ? Math.round(r.total_cost) : '',\n          r.wholesale_price ? Math.round(r.wholesale_price) : '',\n          r.sale_price ? Math.round(r.sale_price) : '',\n          r.profit ? Math.round(r.profit) : '',\n          r.weight ? Number(r.weight).toFixed(3) : '',\n          r.author || payload.device_name || '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c',\n          r.parts_summary || ''\n        ]);\n        addedCount++;\n      }\n\n      return jsonResponse({\n        status: 'ok',\n        message: '\u0423\u0441\u043f\u0435\u0448\u043d\u043e \u0434\u043e\u0431\u0430\u0432\u043b\u0435\u043d\u043e \u043d\u043e\u0432\u044b\u0445 \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432: ' + addedCount,\n        added_count: addedCount,\n        total_in_sheet: histSheet.getLastRow() - 1\n      });\n    }\n\n    // 2. \u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u0435 \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043a \u0432 \u043b\u0438\u0441\u0442 \"\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438\" (Save Settings)\n    if (action === 'save_settings') {\n      var setSheet = getOrCreateSettingsSheet(ss);\n      var resSettings = writeSettingsToSheet(setSheet, payload.settings);\n      return jsonResponse(resSettings);\n    }\n\n    // 3. \u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f \u0447\u0435\u0440\u0435\u0437 POST\n    if (action === 'verify_user') {\n      var userSheet = getOrCreateUsersSheet(ss);\n      var res2 = verifyUserInSheet(userSheet, payload.login, payload.password, payload.password_hash);\n      return jsonResponse(res2);\n    }\n\n    // 4. \u0421\u043e\u0437\u0434\u0430\u043d\u0438\u0435 / \u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u0435 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f \u0432 \u043b\u0438\u0441\u0442\u0435 \"\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0438\"\n    if (action === 'save_user') {\n      var userSheet2 = getOrCreateUsersSheet(ss);\n      var rows2 = userSheet2.getDataRange().getValues();\n      var targetLogin = (payload.login || '').trim();\n      var foundRowIndex = -1;\n\n      for (var m = 1; m < rows2.length; m++) {\n        if ((rows2[m][1] || '').toString().trim().toLowerCase() === targetLogin.toLowerCase()) {\n          foundRowIndex = m + 1;\n          break;\n        }\n      }\n\n      if (foundRowIndex !== -1) {\n        if (payload.password) userSheet2.getRange(foundRowIndex, 3).setValue(payload.password);\n        if (payload.password_hash) userSheet2.getRange(foundRowIndex, 4).setValue(payload.password_hash);\n        if (payload.role) userSheet2.getRange(foundRowIndex, 5).setValue(payload.role);\n        if (payload.name) userSheet2.getRange(foundRowIndex, 6).setValue(payload.name);\n        if (payload.status) userSheet2.getRange(foundRowIndex, 7).setValue(payload.status);\n        return jsonResponse({ status: 'ok', message: '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c ' + targetLogin + ' \u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d' });\n      } else {\n        var newId = 'USR-' + (rows2.length < 10 ? '00' : (rows2.length < 100 ? '0' : '')) + rows2.length;\n        userSheet2.appendRow([\n          newId,\n          targetLogin,\n          payload.password || '',\n          payload.password_hash || '',\n          payload.role || '\u0421\u043e\u0442\u0440\u0443\u0434\u043d\u0438\u043a',\n          payload.name || targetLogin,\n          payload.status || '\u0410\u043a\u0442\u0438\u0432\u0435\u043d',\n          new Date().toLocaleString(\"ru-RU\"),\n          ''\n        ]);\n        return jsonResponse({ status: 'ok', message: '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c ' + targetLogin + ' \u0441\u043e\u0437\u0434\u0430\u043d', id: newId });\n      }\n    }\n\n    return jsonResponse({ status: 'error', message: '\u041d\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043d\u043e\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435: ' + action });\n\n  } catch (err) {\n    return jsonResponse({ status: 'error', message: err.toString() });\n  }\n}\n\n// ================= \u0412\u0421\u041f\u041e\u041c\u041e\u0413\u0410\u0422\u0415\u041b\u042c\u041d\u042b\u0415 \u0424\u0423\u041d\u041a\u0426\u0418\u0418 =================\n\n// \u0427\u0442\u0435\u043d\u0438\u0435 \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043a \u0438\u0437 \u043b\u0438\u0441\u0442\u0430 \"\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438\"\nfunction readSettingsFromSheet(sheet) {\n  var data = sheet.getDataRange().getValues();\n  if (data.length <= 1) return null;\n\n  // \u041f\u0440\u043e\u0432\u0435\u0440\u044f\u0435\u043c \u043d\u0430\u043b\u0438\u0447\u0438\u0435 \u0441\u043b\u0443\u0436\u0435\u0431\u043d\u043e\u0439 \u044f\u0447\u0435\u0439\u043a\u0438 Z1 \u0441 \u043f\u043e\u043b\u043d\u044b\u043c JSON (\u0435\u0441\u043b\u0438 \u0435\u0441\u0442\u044c)\n  try {\n    var rawJson = sheet.getRange(1, 26).getValue();\n    if (rawJson && rawJson.toString().trim().startsWith('{')) {\n      return JSON.parse(rawJson);\n    }\n  } catch (e) {}\n\n  // \u0418\u043d\u0430\u0447\u0435 \u0440\u0430\u0437\u0431\u0438\u0440\u0430\u0435\u043c \u0441\u0442\u0440\u043e\u043a\u0438 \u043b\u0438\u0441\u0442\u0430\n  var s = {\n    general: {\n      pet_price_per_m2: 389.76,\n      work_price_per_part: 200.0,\n      aramid_paper_price_per_m2: 38.46,\n      aramid_edging_price_per_m: 5.0,\n      svmp_default_multiplier: 3.3,\n      aramid_default_multiplier: 2.625\n    },\n    materials: [],\n    allowed_layers: [],\n    covers: [],\n    accessories: [],\n    stickers: []\n  };\n\n  for (var i = 1; i < data.length; i++) {\n    var row = data[i];\n    var cat = (row[0] || '').toString().trim();\n    var code = (row[1] || '').toString().trim();\n    var name = (row[2] || '').toString().trim();\n    var val = parseFloat(row[3]) || 0;\n    var unit = (row[4] || '').toString().trim();\n    var extra = (row[5] || '').toString().trim();\n\n    if (cat === '\u041e\u0431\u0449\u0438\u0435 \u043d\u043e\u0440\u043c\u0430\u0442\u0438\u0432\u044b') {\n      if (code === 'pet_price_per_m2') s.general.pet_price_per_m2 = val;\n      else if (code === 'work_price_per_part') s.general.work_price_per_part = val;\n      else if (code === 'aramid_paper_price_per_m2') s.general.aramid_paper_price_per_m2 = val;\n      else if (code === 'aramid_edging_price_per_m') s.general.aramid_edging_price_per_m = val;\n      else if (code === 'svmp_default_multiplier') s.general.svmp_default_multiplier = val;\n      else if (code === 'aramid_default_multiplier') s.general.aramid_default_multiplier = val;\n    } else if (cat === '\u0411\u0430\u043b\u043b\u0438\u0441\u0442\u0438\u043a\u0430 \u0438 \u0441\u043b\u043e\u0438') {\n      var defect = 3.0;\n      var layers = [20, 25, 30, 40];\n      if (extra) {\n        var mDefect = extra.match(/\u0411\u0440\u0430\u043a:\\s*([\\d\\.]+)%/i);\n        if (mDefect) defect = parseFloat(mDefect[1]) || 3.0;\n        var mLayers = extra.match(/\u0421\u043b\u043e\u0438:\\s*([\\d\\s,]+)/i);\n        if (mLayers) {\n          layers = mLayers[1].split(',').map(function(x) { return parseInt(x.trim()); }).filter(function(n) { return !isNaN(n) && n > 0; });\n        }\n      }\n      s.materials.push({ code: code, name: name, unit: '\u043c\u00b2', price_per_m2: val, defect_pct: defect });\n      s.allowed_layers.push({ name: name, layers: layers });\n    } else if (cat === '\u0422\u043a\u0430\u043d\u0438 \u0447\u0435\u0445\u043b\u0430') {\n      var aMarkup = 5.0, dMarkup = 2.0;\n      if (extra) {\n        var ma = extra.match(/\u043f\u043b\u043e\u0449\u0430\u0434\u044c:\\s*([\\d\\.]+)%/i);\n        if (ma) aMarkup = parseFloat(ma[1]) || 5.0;\n        var md = extra.match(/\u0431\u0440\u0430\u043a:\\s*([\\d\\.]+)%/i);\n        if (md) dMarkup = parseFloat(md[1]) || 2.0;\n      }\n      s.covers.push({ code: code, name: name, price_per_m2: val, area_markup_pct: aMarkup, defect_markup_pct: dMarkup });\n    } else if (cat === '\u0424\u0443\u0440\u043d\u0438\u0442\u0443\u0440\u0430') {\n      s.accessories.push({ code: code, name: name, unit: unit || '\u0448\u0442', price: val });\n    } else if (cat === '\u041d\u0430\u043a\u043b\u0435\u0439\u043a\u0438') {\n      s.stickers.push({ code: code, name: name, price: val });\n    }\n  }\n\n  return s;\n}\n\n// \u0417\u0430\u043f\u0438\u0441\u044c \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043a \u0432 \u043b\u0438\u0441\u0442 \"\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438\"\nfunction writeSettingsToSheet(sheet, settings) {\n  if (!settings) return { status: 'error', message: '\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438 \u043d\u0435 \u043f\u0435\u0440\u0435\u0434\u0430\u043d\u044b' };\n\n  sheet.clear();\n  var headers = [\n    '\u041a\u0430\u0442\u0435\u0433\u043e\u0440\u0438\u044f',\n    '\u041f\u0430\u0440\u0430\u043c\u0435\u0442\u0440 / \u041a\u043e\u0434',\n    '\u041d\u0430\u0438\u043c\u0435\u043d\u043e\u0432\u0430\u043d\u0438\u0435',\n    '\u0417\u043d\u0430\u0447\u0435\u043d\u0438\u0435 / \u0426\u0435\u043d\u0430 (\u0440\u0443\u0431)',\n    '\u0415\u0434. \u0438\u0437\u043c.',\n    '\u0414\u043e\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0435 \u043f\u0430\u0440\u0430\u043c\u0435\u0442\u0440\u044b (\u0431\u0440\u0430\u043a %, \u043d\u0430\u0446\u0435\u043d\u043a\u0438, \u0441\u043b\u043e\u0438)'\n  ];\n  sheet.appendRow(headers);\n\n  var headerRange = sheet.getRange(1, 1, 1, headers.length);\n  headerRange.setBackground('#1e293b');\n  headerRange.setFontColor('#f8fafc');\n  headerRange.setFontWeight('bold');\n  headerRange.setHorizontalAlignment('center');\n  sheet.setFrozenRows(1);\n\n  var rows = [];\n\n  // 1. \u041e\u0431\u0449\u0438\u0435 \u043d\u043e\u0440\u043c\u0430\u0442\u0438\u0432\u044b\n  if (settings.general) {\n    var g = settings.general;\n    rows.push(['\u041e\u0431\u0449\u0438\u0435 \u043d\u043e\u0440\u043c\u0430\u0442\u0438\u0432\u044b', 'pet_price_per_m2', '1 \u043b\u0438\u0441\u0442 \u041f\u042d\u0422', g.pet_price_per_m2 || 389.76, '\u0440\u0443\u0431/\u043c\u00b2', '']);\n    rows.push(['\u041e\u0431\u0449\u0438\u0435 \u043d\u043e\u0440\u043c\u0430\u0442\u0438\u0432\u044b', 'work_price_per_part', '\u0421\u0442\u043e\u0438\u043c\u043e\u0441\u0442\u044c \u0440\u0430\u0431\u043e\u0442\u044b \u0437\u0430 \u0434\u0435\u0442\u0430\u043b\u044c', g.work_price_per_part || 200.0, '\u0440\u0443\u0431/\u0434\u0435\u0442\u0430\u043b\u044c', '']);\n    rows.push(['\u041e\u0431\u0449\u0438\u0435 \u043d\u043e\u0440\u043c\u0430\u0442\u0438\u0432\u044b', 'aramid_paper_price_per_m2', '\u0411\u0443\u043c\u0430\u0433\u0430 \u043d\u0430 \u0430\u0440\u0430\u043c\u0438\u0434', g.aramid_paper_price_per_m2 || 38.46, '\u0440\u0443\u0431/\u043c\u00b2', '']);\n    rows.push(['\u041e\u0431\u0449\u0438\u0435 \u043d\u043e\u0440\u043c\u0430\u0442\u0438\u0432\u044b', 'aramid_edging_price_per_m', '\u041e\u043a\u0430\u043d\u0442\u043e\u0432\u043a\u0430 \u043d\u0430 \u0430\u0440\u0430\u043c\u0438\u0434', g.aramid_edging_price_per_m || 5.0, '\u0440\u0443\u0431/\u043c', '']);\n    rows.push(['\u041e\u0431\u0449\u0438\u0435 \u043d\u043e\u0440\u043c\u0430\u0442\u0438\u0432\u044b', 'svmp_default_multiplier', '\u0411\u0430\u0437\u043e\u0432\u0430\u044f \u043d\u0430\u0446\u0435\u043d\u043a\u0430 \u0421\u0412\u041c\u041f\u044d', g.svmp_default_multiplier || 3.3, '\u043a\u043e\u044d\u0444\u0444.', '']);\n    rows.push(['\u041e\u0431\u0449\u0438\u0435 \u043d\u043e\u0440\u043c\u0430\u0442\u0438\u0432\u044b', 'aramid_default_multiplier', '\u0411\u0430\u0437\u043e\u0432\u0430\u044f \u043d\u0430\u0446\u0435\u043d\u043a\u0430 \u0410\u0440\u0430\u043c\u0438\u0434', g.aramid_default_multiplier || 2.625, '\u043a\u043e\u044d\u0444\u0444.', '']);\n  }\n\n  // 2. \u0411\u0430\u043b\u043b\u0438\u0441\u0442\u0438\u043a\u0430 \u0438 \u0441\u043b\u043e\u0438\n  var mats = settings.materials || [];\n  var layersList = settings.allowed_layers || [];\n\n  mats.forEach(function(m) {\n    var lObj = null;\n    if (Array.isArray(layersList)) {\n      lObj = layersList.find(function(x) { return x.name === m.name; });\n    } else if (layersList[m.name]) {\n      lObj = { name: m.name, layers: layersList[m.name] };\n    }\n    var lStr = lObj ? lObj.layers.join(', ') : '20, 25, 30, 40';\n    rows.push(['\u0411\u0430\u043b\u043b\u0438\u0441\u0442\u0438\u043a\u0430 \u0438 \u0441\u043b\u043e\u0438', m.code || m.name, m.name, m.price_per_m2, '\u0440\u0443\u0431/\u043c\u00b2', '\u0411\u0440\u0430\u043a: ' + (m.defect_pct || 3) + '% | \u0421\u043b\u043e\u0438: ' + lStr]);\n  });\n\n  // 3. \u0422\u043a\u0430\u043d\u0438 \u0447\u0435\u0445\u043b\u0430\n  (settings.covers || []).forEach(function(c) {\n    rows.push(['\u0422\u043a\u0430\u043d\u0438 \u0447\u0435\u0445\u043b\u0430', c.code || c.name, c.name, c.price_per_m2, '\u0440\u0443\u0431/\u043c\u00b2', '\u041d\u0430\u0446\u0435\u043d\u043a\u0430 \u043d\u0430 \u043f\u043b\u043e\u0449\u0430\u0434\u044c: ' + (c.area_markup_pct || 5) + '% | \u0411\u0440\u0430\u043a: ' + (c.defect_markup_pct || 2) + '%']);\n  });\n\n  // 4. \u0424\u0443\u0440\u043d\u0438\u0442\u0443\u0440\u0430\n  (settings.accessories || []).forEach(function(a) {\n    rows.push(['\u0424\u0443\u0440\u043d\u0438\u0442\u0443\u0440\u0430', a.code || a.name, a.name, a.price, a.unit || '\u0448\u0442', '']);\n  });\n\n  // 5. \u041d\u0430\u043a\u043b\u0435\u0439\u043a\u0438\n  (settings.stickers || []).forEach(function(s) {\n    rows.push(['\u041d\u0430\u043a\u043b\u0435\u0439\u043a\u0438', s.code, s.name, s.price, '\u0448\u0442', '']);\n  });\n\n  if (rows.length > 0) {\n    sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);\n  }\n\n  // \u0417\u0430\u043f\u0438\u0441\u044b\u0432\u0430\u0435\u043c \u0447\u0438\u0441\u0442\u044b\u0439 JSON \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043a \u0432 \u044f\u0447\u0435\u0439\u043a\u0443 Z1 \u0434\u043b\u044f \u0442\u043e\u0447\u043d\u043e\u0433\u043e \u0432\u043e\u0441\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u044f\n  sheet.getRange(1, 26).setValue(JSON.stringify(settings));\n\n  var widths = [160, 200, 220, 160, 110, 320];\n  for (var w = 0; w < widths.length; w++) {\n    sheet.setColumnWidth(w + 1, widths[w]);\n  }\n\n  return { status: 'ok', message: '\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438 \u0443\u0441\u043f\u0435\u0448\u043d\u043e \u0432\u044b\u0433\u0440\u0443\u0436\u0435\u043d\u044b \u0432 Google \u0422\u0430\u0431\u043b\u0438\u0446\u0443', count: rows.length };\n}\n\n// \u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f \u0432 \u0442\u0430\u0431\u043b\u0438\u0446\u0435\nfunction verifyUserInSheet(userSheet, inputLogin, inputPass, inputHash) {\n  if (!inputLogin) return { status: 'not_found', message: '\u041b\u043e\u0433\u0438\u043d \u043d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d' };\n\n  var data = userSheet.getDataRange().getValues();\n  if (data.length <= 1) return { status: 'not_found', message: '\u0421\u043f\u0438\u0441\u043e\u043a \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0435\u0439 \u043f\u0443\u0441\u0442' };\n\n  var cleanLogin = inputLogin.toString().trim().toLowerCase();\n  var cleanPass = (inputPass || '').toString();\n  var cleanHash = (inputHash || '').toString().trim().toLowerCase();\n\n  var headers = data[0].map(function(h) { return h.toString().trim().toLowerCase(); });\n  var colLogin = 1;\n  var colPlain = 2;\n  var colHash = 3;\n  var colRole = 4;\n  var colName = 5;\n  var colStatus = 6;\n  var colLastLogin = 8;\n\n  for (var i = 0; i < headers.length; i++) {\n    var h = headers[i];\n    if (h === '\u043b\u043e\u0433\u0438\u043d') colLogin = i;\n    else if (h.indexOf('\u0445\u044d\u0448') !== -1 || h.indexOf('sha') !== -1) colHash = i;\n    else if (h.indexOf('\u043f\u0430\u0440\u043e\u043b\u044c') !== -1) colPlain = i;\n    else if (h.indexOf('\u0440\u043e\u043b\u044c') !== -1) colRole = i;\n    else if (h.indexOf('\u0438\u043c\u044f') !== -1 || h.indexOf('\u0444\u0438\u043e') !== -1) colName = i;\n    else if (h.indexOf('\u0441\u0442\u0430\u0442\u0443\u0441') !== -1) colStatus = i;\n    else if (h.indexOf('\u0432\u0445\u043e\u0434') !== -1) colLastLogin = i;\n  }\n\n  for (var r = 1; r < data.length; r++) {\n    var row = data[r];\n    var rowLogin = (row[colLogin] || '').toString().trim().toLowerCase();\n\n    if (rowLogin === cleanLogin) {\n      var rowStatus = (row[colStatus] || '\u0410\u043a\u0442\u0438\u0432\u0435\u043d').toString().trim();\n      if (rowStatus.toLowerCase() !== '\u0430\u043a\u0442\u0438\u0432\u0435\u043d') {\n        return { status: 'blocked', message: '\u0423\u0447\u0435\u0442\u043d\u0430\u044f \u0437\u0430\u043f\u0438\u0441\u044c \u0437\u0430\u0431\u043b\u043e\u043a\u0438\u0440\u043e\u0432\u0430\u043d\u0430 \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u043e\u043c' };\n      }\n\n      var rowHash = (row[colHash] || '').toString().trim().toLowerCase();\n      var rowPlain = (row[colPlain] || '').toString().trim();\n\n      var match = false;\n      if (cleanHash && rowHash && cleanHash === rowHash) match = true;\n      if (cleanPass && rowPlain && cleanPass === rowPlain) match = true;\n      if (cleanPass && cleanPass === 'UnityProxy' && cleanLogin === 'admin') match = true;\n\n      if (match) {\n        if (colLastLogin !== -1 && colLastLogin < row.length) {\n          userSheet.getRange(r + 1, colLastLogin + 1).setValue(new Date().toLocaleString(\"ru-RU\"));\n        }\n        var role = (row[colRole] || '\u0421\u043e\u0442\u0440\u0443\u0434\u043d\u0438\u043a').toString().trim();\n        var name = (row[colName] || row[colLogin] || cleanLogin).toString().trim();\n        return {\n          status: 'ok',\n          login: row[colLogin],\n          role: role,\n          is_admin: (role.toLowerCase().indexOf('\u0430\u0434\u043c\u0438\u043d') !== -1 || role.toLowerCase() === 'admin'),\n          name: name\n        };\n      } else {\n        return { status: 'wrong_password', message: '\u041d\u0435\u0432\u0435\u0440\u043d\u044b\u0439 \u043f\u0430\u0440\u043e\u043b\u044c' };\n      }\n    }\n  }\n\n  return { status: 'not_found', message: '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d' };\n}\n\nfunction jsonResponse(obj, callback) {\n  var str = JSON.stringify(obj);\n  if (callback) {\n    return ContentService.createTextOutput(callback + '(' + str + ');')\n      .setMimeType(ContentService.MimeType.JAVASCRIPT);\n  }\n  return ContentService.createTextOutput(str)\n    .setMimeType(ContentService.MimeType.JSON);\n}\n\n// \u041b\u0438\u0441\u0442 1: \u0418\u0441\u0442\u043e\u0440\u0438\u044f \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432\nfunction getOrCreateHistorySheet(ss) {\n  var sheet = ss.getSheetByName(SHEET_HISTORY);\n  if (!sheet) {\n    sheet = ss.insertSheet(SHEET_HISTORY);\n    var headers = [\n      'ID \u0437\u0430\u043f\u0438\u0441\u0438',\n      '\u0414\u0430\u0442\u0430 \u0438 \u0432\u0440\u0435\u043c\u044f',\n      '\u041d\u0430\u0438\u043c\u0435\u043d\u043e\u0432\u0430\u043d\u0438\u0435 \u0438\u0437\u0434\u0435\u043b\u0438\u044f',\n      '\u0410\u0440\u0442\u0438\u043a\u0443\u043b / \u041a\u043e\u0434',\n      '\u041c\u0430\u0442\u0435\u0440\u0438\u0430\u043b',\n      '\u0421\u043b\u043e\u0451\u0432',\n      '\u041f\u043b\u043e\u0449\u0430\u0434\u044c (\u043c\u00b2)',\n      '\u0427\u0435\u0445\u043e\u043b (\u0442\u043a\u0430\u043d\u0438)',\n      '\u0424\u0443\u0440\u043d\u0438\u0442\u0443\u0440\u0430 / \u041e\u043f\u0446\u0438\u0438',\n      '\u0421\u0435\u0431\u0435\u0441\u0442\u043e\u0438\u043c\u043e\u0441\u0442\u044c \u043c\u0430\u0442\u0435\u0440. (\u0440\u0443\u0431)',\n      '\u0420\u0430\u0431\u043e\u0442\u0430 (\u0440\u0443\u0431)',\n      '\u0418\u0442\u043e\u0433\u043e \u0441\u0435\u0431\u0435\u0441\u0442\u043e\u0438\u043c\u043e\u0441\u0442\u044c (\u0440\u0443\u0431)',\n      '\u041e\u043f\u0442\u043e\u0432\u0430\u044f \u0446\u0435\u043d\u0430 (\u0440\u0443\u0431)',\n      '\u0420\u0435\u043a\u043e\u043c. \u0440\u043e\u0437\u043d\u0438\u0446\u0430 (\u0440\u0443\u0431)',\n      '\u041f\u0440\u0438\u0431\u044b\u043b\u044c \u0440\u043e\u0437\u043d\u0438\u0446\u044b (\u0440\u0443\u0431)',\n      '\u0412\u0435\u0441 (\u043a\u0433)',\n      '\u0410\u0432\u0442\u043e\u0440 / \u0423\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u043e',\n      '\u0414\u0435\u0442\u0430\u043b\u0438 \u043a\u0440\u043e\u044f'\n    ];\n    sheet.appendRow(headers);\n\n    var headerRange = sheet.getRange(1, 1, 1, headers.length);\n    headerRange.setBackground('#0f172a');\n    headerRange.setFontColor('#f8fafc');\n    headerRange.setFontWeight('bold');\n    headerRange.setHorizontalAlignment('center');\n    sheet.setFrozenRows(1);\n\n    var widths = [110, 140, 200, 120, 100, 70, 100, 160, 160, 130, 100, 140, 130, 130, 130, 80, 130, 220];\n    for (var i = 0; i < widths.length; i++) {\n      sheet.setColumnWidth(i + 1, widths[i]);\n    }\n  }\n  return sheet;\n}\n\n// \u041b\u0438\u0441\u0442 2: \u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0438\nfunction getOrCreateUsersSheet(ss) {\n  var sheet = ss.getSheetByName(SHEET_USERS);\n  if (!sheet) {\n    sheet = ss.insertSheet(SHEET_USERS);\n    var headers = [\n      'ID',\n      '\u041b\u043e\u0433\u0438\u043d',\n      '\u041f\u0430\u0440\u043e\u043b\u044c (\u043e\u0442\u043a\u0440\u044b\u0442\u044b\u0439 / \u0434\u043b\u044f \u0437\u0430\u043c\u0435\u0442\u043e\u043a)',\n      '\u0425\u044d\u0448 \u043f\u0430\u0440\u043e\u043b\u044f (SHA-256)',\n      '\u0420\u043e\u043b\u044c',\n      '\u0424\u0418\u041e / \u0418\u043c\u044f \u0441\u043e\u0442\u0440\u0443\u0434\u043d\u0438\u043a\u0430',\n      '\u0421\u0442\u0430\u0442\u0443\u0441',\n      '\u0414\u0430\u0442\u0430 \u0441\u043e\u0437\u0434\u0430\u043d\u0438\u044f',\n      '\u041f\u043e\u0441\u043b\u0435\u0434\u043d\u0438\u0439 \u0432\u0445\u043e\u0434'\n    ];\n    sheet.appendRow(headers);\n\n    var headerRange = sheet.getRange(1, 1, 1, headers.length);\n    headerRange.setBackground('#1e293b');\n    headerRange.setFontColor('#f8fafc');\n    headerRange.setFontWeight('bold');\n    headerRange.setHorizontalAlignment('center');\n    sheet.setFrozenRows(1);\n\n    sheet.appendRow([\n      'USR-001',\n      'admin',\n      'UnityProxy',\n      '75ad31cc31193c26bff6c1b871819fb5004ef13f0c6e94a3ae8e76743641d2db',\n      '\u0410\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440',\n      '\u0413\u043b\u0430\u0432\u043d\u044b\u0439 \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440',\n      '\u0410\u043a\u0442\u0438\u0432\u0435\u043d',\n      new Date().toLocaleString(\"ru-RU\"),\n      ''\n    ]);\n\n    sheet.appendRow([\n      'USR-002',\n      'user',\n      'blstcs2026',\n      'b7b260d7fe03c0e686972dc206d1270d8330e5fb38b960710bd3e40c3dfba561',\n      '\u0421\u043e\u0442\u0440\u0443\u0434\u043d\u0438\u043a',\n      '\u041c\u0435\u043d\u0435\u0434\u0436\u0435\u0440 \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432',\n      '\u0410\u043a\u0442\u0438\u0432\u0435\u043d',\n      new Date().toLocaleString(\"ru-RU\"),\n      ''\n    ]);\n  }\n  return sheet;\n}\n\n// \u041b\u0438\u0441\u0442 3: \u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438\nfunction getOrCreateSettingsSheet(ss) {\n  var sheet = ss.getSheetByName(SHEET_SETTINGS);\n  if (!sheet) {\n    sheet = ss.insertSheet(SHEET_SETTINGS);\n    var headers = [\n      '\u041a\u0430\u0442\u0435\u0433\u043e\u0440\u0438\u044f',\n      '\u041f\u0430\u0440\u0430\u043c\u0435\u0442\u0440 / \u041a\u043e\u0434',\n      '\u041d\u0430\u0438\u043c\u0435\u043d\u043e\u0432\u0430\u043d\u0438\u0435',\n      '\u0417\u043d\u0430\u0447\u0435\u043d\u0438\u0435 / \u0426\u0435\u043d\u0430 (\u0440\u0443\u0431)',\n      '\u0415\u0434. \u0438\u0437\u043c.',\n      '\u0414\u043e\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0435 \u043f\u0430\u0440\u0430\u043c\u0435\u0442\u0440\u044b (\u0431\u0440\u0430\u043a %, \u043d\u0430\u0446\u0435\u043d\u043a\u0438, \u0441\u043b\u043e\u0438)'\n    ];\n    sheet.appendRow(headers);\n\n    var headerRange = sheet.getRange(1, 1, 1, headers.length);\n    headerRange.setBackground('#1e293b');\n    headerRange.setFontColor('#f8fafc');\n    headerRange.setFontWeight('bold');\n    headerRange.setHorizontalAlignment('center');\n    sheet.setFrozenRows(1);\n  }\n  return sheet;\n}\n";
 
     const DEFAULT_MASTER_HASH = "75ad31cc31193c26bff6c1b871819fb5004ef13f0c6e94a3ae8e76743641d2db"; // sha256("UnityProxy")
     const DEFAULT_PASS_HASH = "b7b260d7fe03c0e686972dc206d1270d8330e5fb38b960710bd3e40c3dfba561";   // sha256("blstcs2026")
@@ -4203,7 +4051,41 @@ ${partsStr}
           saveHistoryList(localList);
           filterAndSortHistory();
 
-          const syncTimeElem = document.getElementById("history-last-sync-time");
+          
+        // 3. Pull directory settings from Google Sheet (лист Настройки)
+        try {
+          const settingsUrl = url + (url.includes("?") ? "&" : "?") + "action=get_settings&t=" + Date.now();
+          const sRes = await fetch(settingsUrl);
+          if (sRes.ok) {
+            const sJson = await sRes.json();
+            if (sJson.status === "ok" && sJson.settings) {
+              const remoteSettings = sJson.settings;
+              if (remoteSettings.general) Object.assign(appSettings.general, remoteSettings.general);
+              if (Array.isArray(remoteSettings.materials) && remoteSettings.materials.length > 0) {
+                appSettings.materials = remoteSettings.materials;
+              }
+              if (remoteSettings.allowed_layers) {
+                appSettings.allowed_layers = remoteSettings.allowed_layers;
+              }
+              if (Array.isArray(remoteSettings.covers) && remoteSettings.covers.length > 0) {
+                appSettings.covers = remoteSettings.covers;
+              }
+              if (Array.isArray(remoteSettings.accessories) && remoteSettings.accessories.length > 0) {
+                appSettings.accessories = remoteSettings.accessories;
+              }
+              if (Array.isArray(remoteSettings.stickers) && remoteSettings.stickers.length > 0) {
+                appSettings.stickers = remoteSettings.stickers;
+              }
+              localStorage.setItem("ballistics_settings", JSON.stringify(appSettings));
+              renderSettingsForm();
+              populateSelectOptions();
+              if (typeof calculateNow === "function") calculateNow();
+            }
+          }
+        } catch (sErr) {
+          console.warn("Could not sync settings from Google Sheet:", sErr);
+        }
+    const syncTimeElem = document.getElementById("history-last-sync-time");
           if (syncTimeElem) {
             syncTimeElem.textContent = "Синхр: " + new Date().toLocaleTimeString("ru-RU", { hour: '2-digit', minute: '2-digit' });
             syncTimeElem.classList.remove("hidden");
@@ -4234,4 +4116,5 @@ ${partsStr}
     }
 </script>
 </body>
-</html>
+</html>updateLayersDropdown(25);
+      
