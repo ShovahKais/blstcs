@@ -2629,44 +2629,107 @@ function getCurrentUserIdentifier() {
       let partsStr = parts.map((p, idx) => `  • Деталь ${idx+1}: ${p.length_cm} × ${p.width_cm} см (периметр ${p.perimeter_mm} мм) — ${p.quantity} шт.`).join("\n");
 
       let extraCoversStr = extraCovers.length > 0 ? "\nДополнительные ткани:\n" + extraCovers.map(e => `  • ${e.fabric_name || e.material} (${e.label || ''}, ${e.area_mult || 1}×)`).join("\n") : "";
-      let accStr = accessories.length > 0 ? "\nФурнитура и опции:\n" + accessories.map(a => `  • ${a.name}: ${a.qty || a.quantity} ${a.unit || 'шт'} (по ${a.price} ₽)`).join("\n") : "";
+      let accStr = accessories.length > 0 ? "\nФурнитура и опции:\n" + accessories.map(a => `  • ${a.name}: ${a.qty !== undefined ? a.qty : a.quantity} ${a.unit || 'шт'} (по ${a.price} ₽)`).join("\n") : "";
 
       // Quick prices
       let singleArea = 0;
-      parts.forEach(p => { if (p.quantity > 0) singleArea += (p.length_cm * p.width_cm * p.quantity) / 10000; });
-      let petCost = document.getElementById("include_pet").checked ? singleArea * (appSettings.general.pet_price_per_m2 || 389.76) : 0;
+      let perim = 0;
+      let partsCount = 0;
+      parts.forEach(p => {
+        if (p.quantity > 0) {
+          singleArea += (p.length_cm * p.width_cm * p.quantity) / 10000;
+          perim += ((p.perimeter_mm || 0) * p.quantity) / 1000;
+          partsCount += parseInt(p.quantity) || 0;
+        }
+      });
+
+      let petCost = (document.getElementById("include_pet").checked && singleArea > 0) ? singleArea * (appSettings.general.pet_price_per_m2 || 389.76) : 0;
+      
       let coverCost = 0;
-      const c = (appSettings.covers || []).find(x => x.name.toLowerCase() === coverMat.toLowerCase());
-      if (c) coverCost = singleArea * (1 + c.area_markup_pct/100) * (1 + c.defect_markup_pct/100) * c.price_per_m2 * (document.getElementById("cover_two_sided").checked ? 2 : 1);
+      const coverSides = document.getElementById("cover_two_sided").checked ? 2.0 : 1.0;
+      if (coverMat && singleArea > 0) {
+        const c = (appSettings.covers || []).find(x => x.name.toLowerCase() === coverMat.toLowerCase()) || { price_per_m2: 510, area_markup_pct: 5, defect_markup_pct: 2 };
+        const cAreaM = 1.0 + ((c.area_markup_pct !== undefined ? c.area_markup_pct : 5.0) / 100.0);
+        const cDefM = 1.0 + ((c.defect_markup_pct !== undefined ? c.defect_markup_pct : 2.0) / 100.0);
+        coverCost = singleArea * coverSides * (c.price_per_m2 || 510) * cAreaM * cDefM;
+      }
+
       let extraCoversCost = 0;
       extraCovers.forEach(ec => { 
-        const ecObj = (appSettings.covers || []).find(x => x.name.toLowerCase() === (ec.material || ec.fabric_name || '').toLowerCase());
-        const ecPrice = ecObj ? ecObj.price_per_m2 : (ec.price_per_m2 || 510);
-        const ecAreaM = ecObj ? (1 + ecObj.area_markup_pct/100) : (1 + (ec.area_markup_pct||5)/100);
-        const ecDefM = ecObj ? (1 + ecObj.defect_markup_pct/100) : (1 + (ec.defect_markup_pct||2)/100);
-        extraCoversCost += singleArea * (ec.area_mult || 1) * ecAreaM * ecDefM * ecPrice;
+        const areaMarkup = 1.0 + ((ec.area_markup_pct !== undefined ? ec.area_markup_pct : 5.0) / 100.0);
+        const defMarkup = 1.0 + ((ec.defect_markup_pct !== undefined ? ec.defect_markup_pct : 2.0) / 100.0);
+        const mult = parseFloat(ec.area_mult) || 1.0;
+        const price = parseFloat(ec.price_per_m2) || 0;
+        extraCoversCost += singleArea * mult * areaMarkup * defMarkup * price;
       });
+
       let accCost = 0;
-      accessories.forEach(a => { accCost += (a.qty || a.quantity || 0) * (a.price || 0); });
+      accessories.forEach(a => { 
+        const q = parseFloat(a.qty !== undefined ? a.qty : a.quantity) || 0;
+        const p = parseFloat(a.price) || 0;
+        accCost += (q * p);
+      });
+
       let stCost = 0;
       const stickerCode = document.getElementById("sticker_code").value;
       const stickerQty = parseInt(document.getElementById("sticker_qty").value) || 0;
       if (stickerCode && stickerQty > 0) {
         const sObj = (appSettings.stickers || []).find(s => s.code.toLowerCase() === stickerCode.toLowerCase());
-        if (sObj) stCost = sObj.price * stickerQty;
+        if (sObj) stCost = (parseFloat(sObj.price) || 0) * stickerQty;
       }
-      let workCost = parts.reduce((acc, p) => acc + (p.quantity || 0), 0) * (parseFloat(document.getElementById("work_price_per_part").value) || appSettings.general.work_price_per_part || 200);
+
+      const workInput = parseFloat(document.getElementById("work_price_per_part").value);
+      const defaultWorkRate = (appSettings.general && appSettings.general.work_price_per_part !== undefined) ? appSettings.general.work_price_per_part : 200.0;
+      const workRate = !isNaN(workInput) ? workInput : defaultWorkRate;
+      const workCost = partsCount * workRate;
+
+      const customMarkupVal = parseFloat(document.getElementById("custom_markup").value);
+      const hasCustomMarkup = !isNaN(customMarkupVal) && customMarkupVal > 0;
+
+      const mats = (appSettings.materials && appSettings.materials.length > 0) ? appSettings.materials : DEFAULT_SETTINGS.materials;
+      const svmpMat = mats.find(m => !m.name.toLowerCase().includes("арамид")) || { price_per_m2: 456.25, name: "СВМПэ" };
+      const aramidMat = mats.find(m => m.name.toLowerCase().includes("арамид")) || { price_per_m2: 1530.0, name: "Арамид" };
+
+      const svmpPrice = parseFloat(svmpMat.price_per_m2) || 456.25;
+      const aramidPrice = parseFloat(aramidMat.price_per_m2) || 1530.0;
+
+      const svmpMult = hasCustomMarkup ? customMarkupVal : (svmpMat.default_multiplier || appSettings.general.svmp_default_multiplier || 3.3);
+      const aramidMult = hasCustomMarkup ? customMarkupVal : (aramidMat.default_multiplier || appSettings.general.aramid_default_multiplier || 2.625);
+
+      const commonOtherCost = petCost + coverCost + extraCoversCost + accCost + stCost + workCost;
 
       const getSvmpP = (l) => {
-        const t = (singleArea * l * 456.25 + petCost + coverCost + extraCoversCost + accCost + stCost) + workCost;
-        return Math.ceil(Math.round(t * (appSettings.general.svmp_default_multiplier || 3.3) * 10000) / 10000 / 100) * 100;
+        const t = (singleArea * l * svmpPrice) + commonOtherCost;
+        return t > 0 ? Math.ceil(Math.round(t * svmpMult * 10000) / 10000 / 100) * 100 : 0;
       };
+
+      const papCost = (document.getElementById("include_aramid_paper") && document.getElementById("include_aramid_paper").checked) ? singleArea * (appSettings.general.aramid_paper_price_per_m2 || 38.46) : 0;
+      const edgCost = (document.getElementById("include_aramid_edging") && document.getElementById("include_aramid_edging").checked) ? perim * (appSettings.general.aramid_edging_price_per_m || 5.0) : 0;
+
       const getAramidP = (l) => {
-        const pap = (document.getElementById("include_aramid_paper") && document.getElementById("include_aramid_paper").checked) ? singleArea * (appSettings.general.aramid_paper_price_per_m2 || 38.46) : 0;
-        const edg = (document.getElementById("include_aramid_edging") && document.getElementById("include_aramid_edging").checked) ? (parts.reduce((acc, p) => acc + (p.perimeter_mm*p.quantity)/1000, 0)) * (appSettings.general.aramid_edging_price_per_m || 5.0) : 0;
-        const t = (singleArea * l * 1530.0 + petCost + coverCost + extraCoversCost + accCost + stCost + pap + edg) + workCost;
-        return Math.ceil(Math.round(t * (appSettings.general.aramid_default_multiplier || 2.625) * 10000) / 10000 / 100) * 100;
+        const t = (singleArea * l * aramidPrice) + commonOtherCost + papCost + edgCost;
+        return t > 0 ? Math.ceil(Math.round(t * aramidMult * 10000) / 10000 / 100) * 100 : 0;
       };
+
+      function getLayerDesc(isAr, l) {
+        if (isAr) {
+          if (l === 18) return " (Класс «А» / базовый)";
+          if (l === 26) return " (Класс «АУ» / усиленный)";
+          if (l === 40) return " (Класс «АСС» / максимальный)";
+        } else {
+          if (l === 20) return " (Бр1 / облегчённый)";
+          if (l === 25) return " (Класс «С» / стандарт)";
+          if (l === 30) return " (Класс «У» / усиленный)";
+          if (l === 40) return " (Класс «СС» / максимальный)";
+        }
+        return "";
+      }
+
+      const svmpLayers = getAllowedLayers(svmpMat.name);
+      const svmpLines = svmpLayers.map(l => `  • ${l} слоёв${getLayerDesc(false, l)} — ${getSvmpP(l).toLocaleString("ru-RU")} ₽`).join("\n");
+
+      const aramidLayers = getAllowedLayers(aramidMat.name);
+      const aramidLines = aramidLayers.map(l => `  • ${l} слоёв${getLayerDesc(true, l)} — ${getAramidP(l).toLocaleString("ru-RU")} ₽`).join("\n");
 
       const text = `📋 КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ / РАСЧЁТ ЦЕН
 Изделие: ${prodName}${codeStr}
@@ -2674,15 +2737,10 @@ function getCurrentUserIdentifier() {
 ${partsStr}
 
 Материал: СВМПэ (баллистический полиэтилен):
-  • 20 слоёв (Бр1 / облегчённый) — ${getSvmpP(20).toLocaleString("ru-RU")} ₽
-  • 25 слоёв (Класс «С» / стандарт) — ${getSvmpP(25).toLocaleString("ru-RU")} ₽
-  • 30 слоёв (Класс «У» / усиленный) — ${getSvmpP(30).toLocaleString("ru-RU")} ₽
-  • 40 слоёв (Класс «СС» / максимальный) — ${getSvmpP(40).toLocaleString("ru-RU")} ₽
+${svmpLines}
 
 Материал: АРАМИД (Тварон / Кевлар):
-  • 18 слоёв (Класс «А» / базовый) — ${getAramidP(18).toLocaleString("ru-RU")} ₽
-  • 26 слоёв (Класс «АУ» / усиленный) — ${getAramidP(26).toLocaleString("ru-RU")} ₽
-  • 40 слоёв (Класс «АСС» / максимальный) — ${getAramidP(40).toLocaleString("ru-RU")} ₽
+${aramidLines}
 
 Комплектация: Чехол (${coverMat}, ${twoSided}), подпорка ПЭТ, маркировка (${sticker}).${extraCoversStr}${accStr}
 Дата: ${new Date().toLocaleDateString("ru-RU")}
@@ -2925,9 +2983,15 @@ ${partsStr}
       document.getElementById("cover_material").value = item.cover_material || "";
       document.getElementById("cover_two_sided").checked = item.cover_two_sided !== false;
       document.getElementById("sticker_code").value = item.sticker_code || "";
-      document.getElementById("sticker_qty").value = item.sticker_qty || 0;
-      document.getElementById("custom_markup").value = item.custom_markup || "";
-      document.getElementById("work_price_per_part").value = item.work_price_per_part || "";
+      document.getElementById("custom_markup").value = (item.custom_markup !== undefined && item.custom_markup !== null) ? item.custom_markup : "";
+      document.getElementById("work_price_per_part").value = (item.work_price_per_part !== undefined && item.work_price_per_part !== null) ? item.work_price_per_part : "";
+
+      if (document.getElementById("include_aramid_paper")) {
+        document.getElementById("include_aramid_paper").checked = !!item.include_aramid_paper;
+      }
+      if (document.getElementById("include_aramid_edging")) {
+        document.getElementById("include_aramid_edging").checked = !!item.include_aramid_edging;
+      }
 
       if (item.extra_covers) {
         extraCovers = JSON.parse(JSON.stringify(item.extra_covers));
@@ -3582,7 +3646,7 @@ ${partsStr}
       parts.forEach(p => {
         if (p.quantity > 0) {
           singleArea += (p.length_cm * p.width_cm * p.quantity) / 10000;
-          perim += (p.perimeter_mm || 0) * p.quantity / 1000;
+          perim += ((p.perimeter_mm || 0) * p.quantity) / 1000;
           partsCount += parseInt(p.quantity) || 0;
         }
       });
@@ -3600,46 +3664,59 @@ ${partsStr}
       const stickerQty = parseInt(document.getElementById("sticker_qty").value) || 0;
       const partsSummary = parts.map(p => `${p.length_cm}×${p.width_cm} см (${p.quantity} шт)`).join(", ");
       const customMarkupInput = document.getElementById("custom_markup").value;
-      const customMult = customMarkupInput ? parseFloat(customMarkupInput) : null;
+      const customMarkupVal = parseFloat(customMarkupInput);
+      const hasCustomMarkup = !isNaN(customMarkupVal) && customMarkupVal > 0;
       const currentUser = getCurrentUserIdentifier();
 
       // PET
       let petCost = 0;
-      if (document.getElementById("include_pet").checked) {
+      if (document.getElementById("include_pet").checked && singleArea > 0) {
         petCost = singleArea * (appSettings.general.pet_price_per_m2 || 389.76);
       }
 
       // Covers
-      const coverObj = (appSettings.covers || []).find(c => c.name === coverMat) || { price_per_m2: 510, area_markup_pct: 5, defect_markup_pct: 2 };
-      const coverMult = 1 + (coverObj.area_markup_pct / 100) + (coverObj.defect_markup_pct / 100);
-      const coverSides = twoSided ? 2 : 1;
-      const coverCost = singleArea * coverSides * coverObj.price_per_m2 * coverMult;
+      let coverCost = 0;
+      const coverSides = twoSided ? 2.0 : 1.0;
+      if (coverMat && singleArea > 0) {
+        const coverObj = (appSettings.covers || []).find(c => c.name.toLowerCase() === coverMat.toLowerCase()) || { price_per_m2: 510, area_markup_pct: 5, defect_markup_pct: 2 };
+        const coverAreaMult = 1.0 + ((coverObj.area_markup_pct !== undefined ? coverObj.area_markup_pct : 5.0) / 100.0);
+        const coverDefectMult = 1.0 + ((coverObj.defect_markup_pct !== undefined ? coverObj.defect_markup_pct : 2.0) / 100.0);
+        coverCost = singleArea * coverSides * (coverObj.price_per_m2 || 510) * coverAreaMult * coverDefectMult;
+      }
 
+      // Extra covers (Дополнительные ткани)
       let extraCoversCost = 0;
       extraCovers.forEach(ec => {
-        const cObj = (appSettings.covers || []).find(c => c.name === ec.material);
-        if (cObj) {
-          const cMult = 1 + (cObj.area_markup_pct / 100) + (cObj.defect_markup_pct / 100);
-          const sides = ec.two_sided ? 2 : 1;
-          extraCoversCost += singleArea * sides * cObj.price_per_m2 * cMult;
-        }
+        const areaMarkup = 1.0 + ((ec.area_markup_pct !== undefined ? ec.area_markup_pct : 5.0) / 100.0);
+        const defMarkup = 1.0 + ((ec.defect_markup_pct !== undefined ? ec.defect_markup_pct : 2.0) / 100.0);
+        const mult = parseFloat(ec.area_mult) || 1.0;
+        const price = parseFloat(ec.price_per_m2) || 0;
+        extraCoversCost += singleArea * mult * areaMarkup * defMarkup * price;
       });
 
-      // Accessories
+      // Hardware & Accessories (Фурнитура)
       let accessoriesCost = 0;
       accessories.forEach(a => {
-        const aObj = (appSettings.accessories || []).find(x => x.name === a.name);
-        if (aObj) accessoriesCost += a.quantity * aObj.price;
+        const q = parseFloat(a.qty !== undefined ? a.qty : a.quantity) || 0;
+        const p = parseFloat(a.price) || 0;
+        accessoriesCost += (q * p);
       });
 
-      // Stickers
+      // Stickers (Маркировка)
       let stickerCost = 0;
-      const stickerObj = (appSettings.stickers || []).find(s => s.code === stickerCode);
-      if (stickerObj) stickerCost = stickerObj.price * stickerQty;
+      if (stickerCode && stickerQty > 0) {
+        const stickerObj = (appSettings.stickers || []).find(s => s.code.toLowerCase() === stickerCode.toLowerCase());
+        if (stickerObj) stickerCost = (parseFloat(stickerObj.price) || 0) * stickerQty;
+      }
 
-      // Work rate
-      const workRate = parseFloat(document.getElementById("work_price_per_part").value) || (appSettings.general.work_price_per_part || 200.0);
+      // Work rate (Работы по пошиву)
+      const workInput = parseFloat(document.getElementById("work_price_per_part").value);
+      const defaultWorkRate = (appSettings.general && appSettings.general.work_price_per_part !== undefined) ? appSettings.general.work_price_per_part : 200.0;
+      const workRate = !isNaN(workInput) ? workInput : defaultWorkRate;
       const workCost = partsCount * workRate;
+
+      const totalCoverCost = coverCost + extraCoversCost;
+      const commonBaseCost = petCost + totalCoverCost + accessoriesCost + stickerCost + workCost;
 
       const mats = (appSettings.materials && appSettings.materials.length > 0) ? appSettings.materials : DEFAULT_SETTINGS.materials;
       let addedCount = 0;
@@ -3649,7 +3726,7 @@ ${partsStr}
         const matPriceM2 = parseFloat(m.price_per_m2) || 456.25;
         const isAramid = m.name.toLowerCase().includes("арамид");
         const defMult = m.default_multiplier || (isAramid ? (appSettings.general.aramid_default_multiplier || 2.625) : (appSettings.general.svmp_default_multiplier || 3.3));
-        const mult = (customMult !== null && customMult > 0) ? customMult : defMult;
+        const mult = hasCustomMarkup ? customMarkupVal : defMult;
 
         matLayers.forEach(l => {
           const bCost = singleArea * l * matPriceM2;
@@ -3662,7 +3739,7 @@ ${partsStr}
               aramidExtra += (perim || 0) * (appSettings.general.aramid_edging_price_per_m || 5.0);
             }
           }
-          const totalCost = bCost + petCost + coverCost + extraCoversCost + accessoriesCost + stickerCost + workCost + aramidExtra;
+          const totalCost = bCost + commonBaseCost + aramidExtra;
           const rawSale = totalCost * mult;
           const salePrice = rawSale > 0 ? Math.ceil(Math.round(rawSale * 10000) / 10000 / 100) * 100 : 0;
 
@@ -3686,7 +3763,7 @@ ${partsStr}
             work_price_per_part: workRate,
             include_aramid_paper: isAramid && document.getElementById("include_aramid_paper") && document.getElementById("include_aramid_paper").checked,
             include_aramid_edging: isAramid && document.getElementById("include_aramid_edging") && document.getElementById("include_aramid_edging").checked,
-            total_cost: Math.round(totalCost),
+            total_cost: parseFloat(totalCost.toFixed(2)),
             sale_price: salePrice,
             author: currentUser
           };
