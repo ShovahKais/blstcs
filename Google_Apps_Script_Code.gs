@@ -103,11 +103,11 @@ function doGet(e) {
         users.push({
           id: u[0],
           login: u[1],
-          role: u[4] || u[2] || 'Сотрудник',
-          name: u[5] || u[4] || u[1],
-          status: u[6] || u[5] || 'Активен',
-          created_at: u[7] || u[6] || '',
-          last_login: u[8] || u[7] || ''
+          role: u[4] || 'Сотрудник',
+          name: u[5] || u[1],
+          status: u[6] || 'Активен',
+          created_at: u[7] || '',
+          last_login: u[8] || ''
         });
       }
       return jsonResponse({ status: 'ok', count: users.length, users: users }, p.callback);
@@ -145,7 +145,8 @@ function doPost(e) {
       for (var k = 1; k < existingData.length; k++) {
         var exRow = existingData[k];
         var idKey = exRow[0] ? exRow[0].toString() : '';
-        var matchKey = (exRow[1] || '') + '|' + (exRow[2] || '') + '|' + (exRow[4] || '') + '|' + (exRow[5] || '');
+        var exDate = exRow[1] ? (exRow[1] instanceof Date ? exRow[1].toLocaleString("ru-RU") : exRow[1].toString()) : '';
+        var matchKey = exDate + '|' + (exRow[2] || '') + '|' + (exRow[4] || '') + '|' + (exRow[5] || '');
         if (idKey) existingKeys[idKey] = true;
         if (matchKey) existingKeys[matchKey] = true;
       }
@@ -156,7 +157,8 @@ function doPost(e) {
         if (!r) continue;
 
         var rIdKey = r.id ? r.id.toString() : '';
-        var rMatchKey = (r.created_at || '') + '|' + (r.product_name || '') + '|' + (r.material || '') + '|' + (r.layers || '');
+        var rDate = r.created_at ? (r.created_at.indexOf('T') !== -1 ? new Date(r.created_at).toLocaleString("ru-RU") : r.created_at.toString()) : '';
+        var rMatchKey = rDate + '|' + (r.product_name || '') + '|' + (r.material || '') + '|' + (r.layers || '');
 
         if (existingKeys[rIdKey] || existingKeys[rMatchKey]) {
           continue; // Уже есть в таблице, пропускаем
