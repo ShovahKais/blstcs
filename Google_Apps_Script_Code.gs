@@ -278,7 +278,7 @@ function readSettingsFromSheet(sheet) {
       work_price_per_part: 200.0,
       aramid_paper_price_per_m2: 38.46,
       aramid_edging_price_per_m: 5.0,
-      svmp_default_multiplier: 3.3,
+      svmp_default_multiplier: 3.465,
       aramid_default_multiplier: 2.625
     },
     materials: [],
@@ -367,7 +367,7 @@ function writeSettingsToSheet(sheet, settings) {
     rows.push(['Общие нормативы', 'work_price_per_part', 'Стоимость работы за деталь', g.work_price_per_part || 200.0, 'руб/деталь', '']);
     rows.push(['Общие нормативы', 'aramid_paper_price_per_m2', 'Бумага на арамид', g.aramid_paper_price_per_m2 || 38.46, 'руб/м²', '']);
     rows.push(['Общие нормативы', 'aramid_edging_price_per_m', 'Окантовка на арамид', g.aramid_edging_price_per_m || 5.0, 'руб/м', '']);
-    rows.push(['Общие нормативы', 'svmp_default_multiplier', 'Базовая наценка СВМПэ', g.svmp_default_multiplier || 3.3, 'коэфф.', '']);
+    rows.push(['Общие нормативы', 'svmp_default_multiplier', 'Базовая наценка СВМПэ', g.svmp_default_multiplier || 3.465, 'коэфф.', '']);
     rows.push(['Общие нормативы', 'aramid_default_multiplier', 'Базовая наценка Арамид', g.aramid_default_multiplier || 2.625, 'коэфф.', '']);
   }
 
