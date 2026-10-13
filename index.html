@@ -261,7 +261,7 @@
 
       <div class="text-center relative z-10">
         <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white p-2 flex items-center justify-center shadow-lg border border-slate-700/50">
-          <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABDkAAAQ4CAYAAAAD0gexAAAACXBIWXMAAAsSAAALEgHS3X78AAAgAElEQVR4nOzd63UbR7YG0FN3zX8qA8ERiBOB4AjMiUBwBMOJYOAIho5AVARDR2AwApMRGIxgxAjq/kDRpiniye6ufuy9FpdEoAEePUigvz51KuWcAwAAAGDo/q92AQAAAABNEHIAAAAAoyDkAAAAAEZByAEAAACMgpADAAAAGAUhBwAAADAKQg4AAABgFIQcAAAAwCgIOQAAAIBREHIAAAAAoyDkAAAAAEZByAEAAACMgpADAAAAGAUhBwAAADAKQg4AAABgFIQcAAAAwCgIOQAAAIBREHIAAAAAoyDkAAAAAEZByAEAAACMgpADAAAAGAUhBwAAADAKQg4AAABgFIQcAAAAwCgIOQAAAIBREHIAAAAAoyDkAAAAAEZByAEAAACMgpADAAAAGAUhBwAAADAKQg4AAABgFIQcAAAAwCgIOQAAAIBREHIAAAAAoyDkAAAAAEZByAEAAACMgpADAAAAGAUhBwAAADAKQg4AA" alt="BLSTCS" class="w-full h-full object-contain">
+          <img src="logo.png" alt="BLSTCS" class="w-full h-full object-contain">
         </div>
         <h2 class="text-xl font-bold tracking-tight text-main mb-1">BLSTCS | Калькулятор</h2>
         <p class="text-xs text-muted mb-6">Авторизация для доступа к расчетам и общей истории</p>
@@ -2969,6 +2969,23 @@ ${aramidLines}
       });
     }
 
+    function parsePartsSummaryString(str) {
+      if (!str) return [];
+      const res = [];
+      const chunks = str.split(",");
+      chunks.forEach((chunk, idx) => {
+        const m = chunk.match(/(\d+(?:[.,]\d+)?)\s*[×x*]\s*(\d+(?:[.,]\d+)?)(?:\s*см)?(?:\s*\((\d+)\s*шт\))?/i);
+        if (m) {
+          const l = parseFloat(m[1].replace(",", ".")) || 20;
+          const w = parseFloat(m[2].replace(",", ".")) || 20;
+          const q = m[3] ? parseInt(m[3]) || 1 : 1;
+          const perim = Math.round(2 * (l * 10 + w * 10));
+          res.push({ part_number: idx + 1, length_cm: l, width_cm: w, perimeter_mm: perim, quantity: q });
+        }
+      });
+      return res;
+    }
+
     function reopenHistoryItem(id) {
       const item = (allHistoryItems || []).find(x => x.id === id);
       if (!item) return;
@@ -3009,6 +3026,9 @@ ${aramidLines}
 
       if (item.parts && item.parts.length > 0) {
         parts = JSON.parse(JSON.stringify(item.parts));
+      } else if (item.parts_summary) {
+        const parsed = parsePartsSummaryString(item.parts_summary);
+        if (parsed.length > 0) parts = parsed;
       }
       renderParts();
       calculateNow();
@@ -3063,6 +3083,11 @@ ${aramidLines}
       clearMyHistory();
     }
 
+    function csvEscape(val) {
+      if (val === undefined || val === null) return "";
+      return String(val).replace(/"/g, '""');
+    }
+
     function exportHistoryCSV() {
       const list = getHistoryList();
       if (list.length === 0) {
@@ -3071,7 +3096,7 @@ ${aramidLines}
       }
       let csv = "ID;Дата;Изделие;Код;Материал;Слои;Детали;Чехол;Себестоимость (руб);Продажная цена (руб)\n";
       list.forEach(item => {
-        csv += `${item.id};"${item.created_at}";"${item.product_name}";"${item.product_code}";"${item.material}";${item.layers};"${item.parts_summary}";"${item.cover_material}";${item.total_cost};${item.sale_price}\n`;
+        csv += `${item.id};"${csvEscape(item.created_at)}";"${csvEscape(item.product_name)}";"${csvEscape(item.product_code)}";"${csvEscape(item.material)}";${item.layers || 0};"${csvEscape(item.parts_summary)}";"${csvEscape(item.cover_material)}";${item.total_cost || 0};${item.sale_price || 0}\n`;
       });
 
       const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
@@ -3400,6 +3425,14 @@ ${aramidLines}
         parts[0].length_cm = parseFloat(hCm.toFixed(1));
         parts[0].width_cm = parseFloat(wCm.toFixed(1));
         parts[0].perimeter_mm = parseFloat(perimeterMm.toFixed(1));
+      } else {
+        parts.push({
+          part_number: 1,
+          length_cm: parseFloat(hCm.toFixed(1)),
+          width_cm: parseFloat(wCm.toFixed(1)),
+          perimeter_mm: parseFloat(perimeterMm.toFixed(1)),
+          quantity: 1
+        });
       }
 
       renderParts();
@@ -4483,7 +4516,7 @@ ${aramidLines}
           material: r.material || "",
           layers: r.layers || 0,
           single_area: r.single_area || (r.parts ? r.parts.reduce((acc, p) => acc + (p.length_cm * p.width_cm * p.quantity)/10000, 0) : 0),
-          cover_summary: (r.cover_material || "") + (r.extra_covers && r.extra_covers.length ? ' + ' + r.extra_covers.map(e => e.name).join(', ') : ''),
+          cover_summary: (r.cover_material || "") + (r.extra_covers && r.extra_covers.length ? ' + ' + r.extra_covers.map(e => e.fabric_name || e.name || e.material || "").join(', ') : ''),
           accessories_summary: (r.accessories && r.accessories.length) ? r.accessories.map(a => `${a.name} (${a.qty} ${a.unit})`).join(', ') : (r.accessories_summary || ''),
           material_cost: r.material_cost || 0,
           work_cost: r.work_cost || 0,
