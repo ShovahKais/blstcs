@@ -10,6 +10,7 @@
     /* Theme color variables */
     :root {
       --bg-body: #090e17;
+      --bg-texture: none;
       --bg-card: #131c2e;
       --bg-header: rgba(15, 23, 42, 0.95);
       --border-card: #1e293b;
@@ -168,96 +169,112 @@
       --watermark-color: #94a3b8;
     }
 
-    /* ================= ТАКТИЧЕСКИЕ РАСЦВЕТКИ (*) ================= */
+    /* ================= ТАКТИЧЕСКИЕ РАСЦВЕТКИ С ТЕКСТУРОЙ CORDURA (*) ================= */
     .theme-multicam { /* * Тактический Мультикам / Tactical Multicam */
       --bg-body: #13110d;
-      --bg-card: #1c1813;
-      --bg-header: rgba(28, 24, 19, 0.95);
-      --border-card: #2e271e;
-      --border-active: #9a7b4f;
-      --text-main: #fbf8f2;
-      --text-muted: #a69a88;
-      --input-bg: #221d16;
-      --input-border: #3b3225;
-      --primary: #9a7b4f;
-      --primary-hover: #82663e;
-      --primary-light: #2b2216;
-      --primary-text: #ebd9be;
-      --theme-ring: rgba(154, 123, 79, 0.3);
-      --hero-gradient: linear-gradient(135deg, #17140f 0%, #3d311f 60%, #13100c 100%);
-      --price-color: #f3d08c;
-      --watermark-color: #574428;
+      --bg-texture: linear-gradient(rgba(16, 13, 9, 0.72), rgba(16, 13, 9, 0.82)), url('assets/textures/multicam.jpg');
+      --bg-card: rgba(25, 21, 16, 0.88);
+      --bg-header: rgba(22, 18, 14, 0.94);
+      --border-card: rgba(154, 123, 79, 0.35);
+      --border-active: #c5a472;
+      --text-main: #fbf9f4;
+      --text-muted: #b8ac9c;
+      --input-bg: rgba(28, 23, 17, 0.94);
+      --input-border: #4d402f;
+      --primary: #c5a472;
+      --primary-hover: #a88755;
+      --primary-light: rgba(197, 164, 114, 0.16);
+      --primary-text: #f5e7cf;
+      --theme-ring: rgba(197, 164, 114, 0.35);
+      --hero-gradient: linear-gradient(135deg, rgba(28, 22, 16, 0.96) 0%, rgba(65, 52, 36, 0.96) 60%, rgba(20, 16, 12, 0.96) 100%);
+      --price-color: #fedb98;
+      --watermark-color: #6a5332;
     }
 
     .theme-moss { /* * Тактический Мох / A-TACS FG */
       --bg-body: #0d120f;
-      --bg-card: #141b16;
-      --bg-header: rgba(20, 27, 22, 0.95);
-      --border-card: #232e25;
-      --border-active: #5b7f43;
-      --text-main: #f2f6f2;
-      --text-muted: #93a294;
-      --input-bg: #19231c;
-      --input-border: #2b3b2f;
-      --primary: #5b7f43;
-      --primary-hover: #496735;
-      --primary-light: #1e2b1b;
-      --primary-text: #d8e8cd;
-      --theme-ring: rgba(91, 127, 67, 0.3);
-      --hero-gradient: linear-gradient(135deg, #0f1611 0%, #2e4322 60%, #0d120e 100%);
-      --price-color: #a8db86;
-      --watermark-color: #384e27;
+      --bg-texture: linear-gradient(rgba(10, 16, 12, 0.72), rgba(10, 16, 12, 0.82)), url('assets/textures/moss.jpg');
+      --bg-card: rgba(16, 25, 19, 0.88);
+      --bg-header: rgba(13, 21, 16, 0.94);
+      --border-card: rgba(91, 127, 67, 0.35);
+      --border-active: #78a858;
+      --text-main: #f2f7f3;
+      --text-muted: #a1b3a3;
+      --input-bg: rgba(19, 29, 23, 0.94);
+      --input-border: #334a38;
+      --primary: #78a858;
+      --primary-hover: #5f8744;
+      --primary-light: rgba(120, 168, 88, 0.16);
+      --primary-text: #e1f0d8;
+      --theme-ring: rgba(120, 168, 88, 0.35);
+      --hero-gradient: linear-gradient(135deg, rgba(16, 26, 19, 0.96) 0%, rgba(42, 66, 32, 0.96) 60%, rgba(12, 19, 14, 0.96) 100%);
+      --price-color: #b9efa0;
+      --watermark-color: #425c2e;
     }
 
     .theme-emr { /* * Тактический ЕМР / Русская цифра */
       --bg-body: #09120b;
-      --bg-card: #0f1c12;
-      --bg-header: rgba(15, 28, 18, 0.95);
-      --border-card: #1b3020;
-      --border-active: #2e7138;
-      --text-main: #f0fdf2;
-      --text-muted: #8aa48f;
-      --input-bg: #132417;
-      --input-border: #233e28;
-      --primary: #2e7138;
-      --primary-hover: #245a2c;
-      --primary-light: #132b17;
-      --primary-text: #b7e4be;
-      --theme-ring: rgba(46, 113, 56, 0.3);
-      --hero-gradient: linear-gradient(135deg, #0b170e 0%, #1e4523 60%, #08110a 100%);
-      --price-color: #6ee787;
-      --watermark-color: #1e4d26;
+      --bg-texture: linear-gradient(rgba(8, 17, 9, 0.72), rgba(8, 17, 9, 0.82)), url('assets/textures/emr.jpg');
+      --bg-card: rgba(13, 25, 16, 0.88);
+      --bg-header: rgba(11, 21, 13, 0.94);
+      --border-card: rgba(46, 113, 56, 0.38);
+      --border-active: #3ea04e;
+      --text-main: #f0fdf3;
+      --text-muted: #9bb7a0;
+      --input-bg: rgba(16, 31, 20, 0.94);
+      --input-border: #2c5332;
+      --primary: #3ea04e;
+      --primary-hover: #2f813c;
+      --primary-light: rgba(62, 160, 78, 0.16);
+      --primary-text: #ccf3d1;
+      --theme-ring: rgba(62, 160, 78, 0.35);
+      --hero-gradient: linear-gradient(135deg, rgba(13, 28, 16, 0.96) 0%, rgba(30, 68, 35, 0.96) 60%, rgba(10, 20, 12, 0.96) 100%);
+      --price-color: #86ef9a;
+      --watermark-color: #2b6135;
     }
 
     .theme-mcblack { /* * Тактический MC Black / Мультикам Чёрный */
       --bg-body: #070709;
-      --bg-card: #0f1014;
-      --bg-header: rgba(15, 16, 20, 0.95);
-      --border-card: #1c1e24;
-      --border-active: #64748b;
+      --bg-texture: linear-gradient(rgba(7, 8, 9, 0.70), rgba(7, 8, 9, 0.82)), url('assets/textures/mcblack.jpg');
+      --bg-card: rgba(16, 18, 22, 0.88);
+      --bg-header: rgba(13, 14, 18, 0.94);
+      --border-card: rgba(100, 116, 139, 0.35);
+      --border-active: #94a3b8;
       --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-      --input-bg: #14161c;
-      --input-border: #242731;
-      --primary: #64748b;
-      --primary-hover: #475569;
-      --primary-light: #181c24;
-      --primary-text: #e2e8f0;
-      --theme-ring: rgba(100, 116, 139, 0.3);
-      --hero-gradient: linear-gradient(135deg, #0c0d11 0%, #232733 60%, #070709 100%);
-      --price-color: #cbd5e1;
-      --watermark-color: #334155;
+      --text-muted: #a6b5c7;
+      --input-bg: rgba(19, 22, 27, 0.94);
+      --input-border: #333945;
+      --primary: #94a3b8;
+      --primary-hover: #64748b;
+      --primary-light: rgba(148, 163, 184, 0.16);
+      --primary-text: #f1f5f9;
+      --theme-ring: rgba(148, 163, 184, 0.35);
+      --hero-gradient: linear-gradient(135deg, rgba(14, 16, 20, 0.96) 0%, rgba(36, 41, 52, 0.96) 60%, rgba(10, 11, 14, 0.96) 100%);
+      --price-color: #e2e8f0;
+      --watermark-color: #475569;
     }
 
     body { 
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background-color: var(--bg-body) !important;
+      background-image: var(--bg-texture, none);
+      background-repeat: repeat;
+      background-size: 512px 512px;
+      background-attachment: fixed;
       color: var(--text-main) !important;
       transition: background-color 0.4s ease, color 0.4s ease;
     }
     
-    .bg-card { background-color: var(--bg-card) !important; }
-    .bg-header { background-color: var(--bg-header) !important; }
+    .bg-card { 
+      background-color: var(--bg-card) !important; 
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .bg-header { 
+      background-color: var(--bg-header) !important; 
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
     .border-card { border-color: var(--border-card) !important; }
     .border-theme { border-color: var(--border-active) !important; }
     .text-main { color: var(--text-main) !important; }
@@ -499,40 +516,40 @@
               <i class="fa-solid fa-check text-theme check-icon hidden"></i>
             </button>
 
-            <!-- Раздел тактических расцветок (*) -->
+            <!-- Раздел тактических расцветок с реальной текстурой Cordura (*) -->
             <div class="px-3 pt-2.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-muted border-t border-card/60 flex items-center justify-between">
-              <span>Тактические расцветки</span>
+              <span>Тактические текстуры Cordura</span>
               <span class="text-amber-500 font-bold">*</span>
             </div>
 
             <button onclick="changeTheme('theme-multicam')" class="theme-opt-btn w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between hover:bg-theme-light hover:text-theme-dark transition" data-theme="theme-multicam">
               <span class="flex items-center gap-2.5">
-                <span class="w-3.5 h-3.5 rounded-full border border-amber-900/40" style="background:#9a7b4f;"></span>
-                <span>* Мультикам (Multicam)</span>
+                <span class="w-4 h-4 rounded-full border border-amber-800/60 shadow-sm" style="background-image: url('assets/textures/multicam.jpg'); background-size: cover; background-position: center;"></span>
+                <span>* Текстура Мультикам (Multicam)</span>
               </span>
               <i class="fa-solid fa-check text-theme check-icon hidden"></i>
             </button>
 
             <button onclick="changeTheme('theme-moss')" class="theme-opt-btn w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between hover:bg-theme-light hover:text-theme-dark transition" data-theme="theme-moss">
               <span class="flex items-center gap-2.5">
-                <span class="w-3.5 h-3.5 rounded-full border border-emerald-900/40" style="background:#5b7f43;"></span>
-                <span>* Мох (A-TACS FG)</span>
+                <span class="w-4 h-4 rounded-full border border-emerald-800/60 shadow-sm" style="background-image: url('assets/textures/moss.jpg'); background-size: cover; background-position: center;"></span>
+                <span>* Текстура Мох (A-TACS FG)</span>
               </span>
               <i class="fa-solid fa-check text-theme check-icon hidden"></i>
             </button>
 
             <button onclick="changeTheme('theme-emr')" class="theme-opt-btn w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between hover:bg-theme-light hover:text-theme-dark transition" data-theme="theme-emr">
               <span class="flex items-center gap-2.5">
-                <span class="w-3.5 h-3.5 rounded-full border border-green-900/40" style="background:#2e7138;"></span>
-                <span>* ЕМР (Русская цифра)</span>
+                <span class="w-4 h-4 rounded-full border border-green-800/60 shadow-sm" style="background-image: url('assets/textures/emr.jpg'); background-size: cover; background-position: center;"></span>
+                <span>* Текстура ЕМР (Русская цифра)</span>
               </span>
               <i class="fa-solid fa-check text-theme check-icon hidden"></i>
             </button>
 
             <button onclick="changeTheme('theme-mcblack')" class="theme-opt-btn w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between hover:bg-theme-light hover:text-theme-dark transition" data-theme="theme-mcblack">
               <span class="flex items-center gap-2.5">
-                <span class="w-3.5 h-3.5 rounded-full border border-slate-700" style="background:#64748b;"></span>
-                <span>* Мультикам Чёрный (MC Black)</span>
+                <span class="w-4 h-4 rounded-full border border-slate-700 shadow-sm" style="background-image: url('assets/textures/mcblack.jpg'); background-size: cover; background-position: center;"></span>
+                <span>* Текстура MC Black (Мультикам Чёрный)</span>
               </span>
               <i class="fa-solid fa-check text-theme check-icon hidden"></i>
             </button>
@@ -1804,10 +1821,10 @@
         "theme-emerald": "🌲 Хвоя (Лесной малахит)",
         "theme-amber": "🛡️ Титан (Матовый графит)",
         "theme-light": "🤍 Светлая (Офис / Документы)",
-        "theme-multicam": "* 🌾 Мультикам (Multicam)",
-        "theme-moss": "* 🌿 Мох (A-TACS FG)",
-        "theme-emr": "* 🪖 ЕМР (Русская цифра)",
-        "theme-mcblack": "* ⚔️ Мультикам Чёрный (MC Black)"
+        "theme-multicam": "* 🌾 Текстура Мультикам (Cordura)",
+        "theme-moss": "* 🌿 Текстура Мох (A-TACS FG)",
+        "theme-emr": "* 🪖 Текстура ЕМР (Русская цифра)",
+        "theme-mcblack": "* ⚔️ Текстура MC Black (Мультикам Чёрный)"
       };
       return names[themeName] || themeName;
     }
