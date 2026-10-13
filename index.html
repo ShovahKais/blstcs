@@ -168,6 +168,87 @@
       --watermark-color: #94a3b8;
     }
 
+    /* ================= ТАКТИЧЕСКИЕ РАСЦВЕТКИ (*) ================= */
+    .theme-multicam { /* * Тактический Мультикам / Tactical Multicam */
+      --bg-body: #13110d;
+      --bg-card: #1c1813;
+      --bg-header: rgba(28, 24, 19, 0.95);
+      --border-card: #2e271e;
+      --border-active: #9a7b4f;
+      --text-main: #fbf8f2;
+      --text-muted: #a69a88;
+      --input-bg: #221d16;
+      --input-border: #3b3225;
+      --primary: #9a7b4f;
+      --primary-hover: #82663e;
+      --primary-light: #2b2216;
+      --primary-text: #ebd9be;
+      --theme-ring: rgba(154, 123, 79, 0.3);
+      --hero-gradient: linear-gradient(135deg, #17140f 0%, #3d311f 60%, #13100c 100%);
+      --price-color: #f3d08c;
+      --watermark-color: #574428;
+    }
+
+    .theme-moss { /* * Тактический Мох / A-TACS FG */
+      --bg-body: #0d120f;
+      --bg-card: #141b16;
+      --bg-header: rgba(20, 27, 22, 0.95);
+      --border-card: #232e25;
+      --border-active: #5b7f43;
+      --text-main: #f2f6f2;
+      --text-muted: #93a294;
+      --input-bg: #19231c;
+      --input-border: #2b3b2f;
+      --primary: #5b7f43;
+      --primary-hover: #496735;
+      --primary-light: #1e2b1b;
+      --primary-text: #d8e8cd;
+      --theme-ring: rgba(91, 127, 67, 0.3);
+      --hero-gradient: linear-gradient(135deg, #0f1611 0%, #2e4322 60%, #0d120e 100%);
+      --price-color: #a8db86;
+      --watermark-color: #384e27;
+    }
+
+    .theme-emr { /* * Тактический ЕМР / Русская цифра */
+      --bg-body: #09120b;
+      --bg-card: #0f1c12;
+      --bg-header: rgba(15, 28, 18, 0.95);
+      --border-card: #1b3020;
+      --border-active: #2e7138;
+      --text-main: #f0fdf2;
+      --text-muted: #8aa48f;
+      --input-bg: #132417;
+      --input-border: #233e28;
+      --primary: #2e7138;
+      --primary-hover: #245a2c;
+      --primary-light: #132b17;
+      --primary-text: #b7e4be;
+      --theme-ring: rgba(46, 113, 56, 0.3);
+      --hero-gradient: linear-gradient(135deg, #0b170e 0%, #1e4523 60%, #08110a 100%);
+      --price-color: #6ee787;
+      --watermark-color: #1e4d26;
+    }
+
+    .theme-mcblack { /* * Тактический MC Black / Мультикам Чёрный */
+      --bg-body: #070709;
+      --bg-card: #0f1014;
+      --bg-header: rgba(15, 16, 20, 0.95);
+      --border-card: #1c1e24;
+      --border-active: #64748b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --input-bg: #14161c;
+      --input-border: #242731;
+      --primary: #64748b;
+      --primary-hover: #475569;
+      --primary-light: #181c24;
+      --primary-text: #e2e8f0;
+      --theme-ring: rgba(100, 116, 139, 0.3);
+      --hero-gradient: linear-gradient(135deg, #0c0d11 0%, #232733 60%, #070709 100%);
+      --price-color: #cbd5e1;
+      --watermark-color: #334155;
+    }
+
     body { 
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background-color: var(--bg-body) !important;
@@ -358,7 +439,7 @@
         <div id="theme-context-menu" class="hidden absolute right-0 mt-2 w-64 rounded-2xl shadow-2xl p-2 z-50 border border-card bg-card backdrop-blur-2xl">
           <div class="px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-muted border-b border-card mb-1 flex items-center justify-between">
             <span>Темы оформления</span>
-            <span class="text-[10px] font-normal text-muted">7 вариантов</span>
+            <span class="text-[10px] font-normal text-muted">11 тем</span>
           </div>
 
           <div class="space-y-1">
@@ -414,6 +495,44 @@
               <span class="flex items-center gap-2.5">
                 <span class="w-3.5 h-3.5 rounded-full border border-slate-300" style="background:#ffffff;"></span>
                 <span>Светлая (Офис / Документы)</span>
+              </span>
+              <i class="fa-solid fa-check text-theme check-icon hidden"></i>
+            </button>
+
+            <!-- Раздел тактических расцветок (*) -->
+            <div class="px-3 pt-2.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-muted border-t border-card/60 flex items-center justify-between">
+              <span>Тактические расцветки</span>
+              <span class="text-amber-500 font-bold">*</span>
+            </div>
+
+            <button onclick="changeTheme('theme-multicam')" class="theme-opt-btn w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between hover:bg-theme-light hover:text-theme-dark transition" data-theme="theme-multicam">
+              <span class="flex items-center gap-2.5">
+                <span class="w-3.5 h-3.5 rounded-full border border-amber-900/40" style="background:#9a7b4f;"></span>
+                <span>* Мультикам (Multicam)</span>
+              </span>
+              <i class="fa-solid fa-check text-theme check-icon hidden"></i>
+            </button>
+
+            <button onclick="changeTheme('theme-moss')" class="theme-opt-btn w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between hover:bg-theme-light hover:text-theme-dark transition" data-theme="theme-moss">
+              <span class="flex items-center gap-2.5">
+                <span class="w-3.5 h-3.5 rounded-full border border-emerald-900/40" style="background:#5b7f43;"></span>
+                <span>* Мох (A-TACS FG)</span>
+              </span>
+              <i class="fa-solid fa-check text-theme check-icon hidden"></i>
+            </button>
+
+            <button onclick="changeTheme('theme-emr')" class="theme-opt-btn w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between hover:bg-theme-light hover:text-theme-dark transition" data-theme="theme-emr">
+              <span class="flex items-center gap-2.5">
+                <span class="w-3.5 h-3.5 rounded-full border border-green-900/40" style="background:#2e7138;"></span>
+                <span>* ЕМР (Русская цифра)</span>
+              </span>
+              <i class="fa-solid fa-check text-theme check-icon hidden"></i>
+            </button>
+
+            <button onclick="changeTheme('theme-mcblack')" class="theme-opt-btn w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between hover:bg-theme-light hover:text-theme-dark transition" data-theme="theme-mcblack">
+              <span class="flex items-center gap-2.5">
+                <span class="w-3.5 h-3.5 rounded-full border border-slate-700" style="background:#64748b;"></span>
+                <span>* Мультикам Чёрный (MC Black)</span>
               </span>
               <i class="fa-solid fa-check text-theme check-icon hidden"></i>
             </button>
@@ -1667,7 +1786,11 @@
         "theme-blue": "Сапфир",
         "theme-emerald": "Хвоя",
         "theme-amber": "Титан",
-        "theme-light": "Светлая"
+        "theme-light": "Светлая",
+        "theme-multicam": "* Мультикам",
+        "theme-moss": "* Мох",
+        "theme-emr": "* ЕМР",
+        "theme-mcblack": "* MC Black"
       };
       return names[themeName] || "Тема";
     }
@@ -1680,7 +1803,11 @@
         "theme-blue": "⚓ Сапфир (Морской флот)",
         "theme-emerald": "🌲 Хвоя (Лесной малахит)",
         "theme-amber": "🛡️ Титан (Матовый графит)",
-        "theme-light": "🤍 Светлая (Офис / Документы)"
+        "theme-light": "🤍 Светлая (Офис / Документы)",
+        "theme-multicam": "* 🌾 Мультикам (Multicam)",
+        "theme-moss": "* 🌿 Мох (A-TACS FG)",
+        "theme-emr": "* 🪖 ЕМР (Русская цифра)",
+        "theme-mcblack": "* ⚔️ Мультикам Чёрный (MC Black)"
       };
       return names[themeName] || themeName;
     }
