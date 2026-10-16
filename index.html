@@ -566,6 +566,24 @@
               </div>
             </div>
 
+            <!-- Additional Expenses Section (Дополнительные расходы: аренда, сотрудники и пр.) -->
+            <div class="mt-4 pt-3 border-t border-card">
+              <div class="flex justify-between items-center mb-2">
+                <div>
+                  <span class="text-xs font-semibold text-main flex items-center gap-1.5">
+                    <i class="fa-solid fa-hand-holding-dollar text-theme"></i> Дополнительные расходы (аренда, сотрудники и пр.):
+                  </span>
+                  <p class="text-[10px] text-muted">Аренда, ОТК, сборка, упаковка, логистика и накладные затраты</p>
+                </div>
+                <button type="button" onclick="addExpenseRow()" class="px-2.5 py-1 text-xs font-semibold bg-theme-light text-theme-dark border border-theme rounded-lg hover:opacity-85 transition flex items-center gap-1 shadow-sm">
+                  <i class="fa-solid fa-plus"></i> Добавить расход
+                </button>
+              </div>
+              <div id="expenses-container" class="space-y-2">
+                <!-- Dynamically populated expense rows -->
+              </div>
+            </div>
+
             <!-- Toggles -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-card">
               <label class="flex items-center space-x-2 text-xs text-muted cursor-pointer hover:text-main">
@@ -747,6 +765,13 @@
                   <span class="w-2.5 h-2.5 rounded-full bg-indigo-400"></span> Фурнитура (<span id="res-accessories-count">0</span> поз.):
                 </span>
                 <span class="font-medium text-main font-mono"><span id="res-accessories-cost">0.00</span> ₽</span>
+              </div>
+
+              <div id="row-expenses" class="flex justify-between items-center py-1 hidden">
+                <span class="text-muted flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-purple-400"></span> Доп. расходы (<span id="res-expenses-count">0</span> поз.):
+                </span>
+                <span class="font-medium text-main font-mono"><span id="res-expenses-cost">0.00</span> ₽</span>
               </div>
 
               <div class="pt-2 border-t border-card flex justify-between items-center font-semibold text-main">
@@ -1201,6 +1226,37 @@
           </table>
         </div>
 
+        <!-- Additional Expenses Table -->
+        <div class="bg-card p-6 rounded-2xl border border-card shadow-lg lg:col-span-2 transition-all hover:border-theme">
+          <div class="flex justify-between items-center mb-3">
+            <div>
+              <h3 class="text-sm font-semibold text-main flex items-center gap-2">
+                <i class="fa-solid fa-hand-holding-dollar text-theme"></i> Справочник дополнительных расходов
+              </h3>
+              <p class="text-xs text-muted">Аренда помещения, оплата труда сотрудников (ОТК, упаковка), накладные и сопутствующие расходы</p>
+            </div>
+            <button onclick="addExpenseSettingsRow()" class="px-3 py-1.5 text-xs bg-theme-light text-theme-dark border border-theme rounded-lg font-semibold hover:opacity-85 transition flex items-center gap-1.5 shadow-sm">
+              <i class="fa-solid fa-plus"></i> Добавить расход в справочник
+            </button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs mb-2">
+              <thead class="bg-theme-light/30 text-muted border-b border-card">
+                <tr>
+                  <th class="py-2 px-2 w-32">Код расхода</th>
+                  <th class="py-2 px-2">Наименование расхода</th>
+                  <th class="py-2 px-2 w-28">Ед. изм.</th>
+                  <th class="py-2 px-2 w-32">Стоимость (руб)</th>
+                  <th class="py-2 px-1 w-8"></th>
+                </tr>
+              </thead>
+              <tbody id="settings-expenses-body" class="divide-y border-card">
+                <!-- Loaded by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       
         <!-- ADMIN PROTECTED SECTION (v3.0 - Protected by Master Password) -->
         <div id="admin-security-section" class="col-span-1 lg:col-span-2 space-y-6">
@@ -1520,6 +1576,12 @@
         { code: "Стандарт", name: "Маска+Наклейка (стандарт)", price: 50.0 },
         { code: "Термотрансфер", name: "Термотрансферная бирка", price: 25.0 }
       ],
+      expenses: [
+        { code: "EXP_RENT", name: "Аренда помещения / рабочего места", unit: "руб", price: 50.0 },
+        { code: "EXP_STAFF", name: "Работа сотрудников (ОТК / упаковка)", unit: "руб", price: 100.0 },
+        { code: "EXP_OVERHEAD", name: "Амортизация и электроэнергия", unit: "руб", price: 30.0 },
+        { code: "EXP_LOGISTICS", name: "Логистика и доставка", unit: "руб", price: 150.0 }
+      ],
       allowed_layers: {
         "СВМПэ": [20, 25, 30, 40],
         "Арамид": [18, 26]
@@ -1571,6 +1633,7 @@
     let parts = [{ part_number: 1, length_cm: 20, width_cm: 20, perimeter_mm: 800, quantity: 1 }];
     let extraCovers = []; // Array of { id, fabric_name, label, area_mult, price_per_m2, area_markup_pct, defect_markup_pct }
     let accessories = []; // Array of { id, code, name, unit, qty, price, is_custom }
+    let expenses = []; // Array of { id, code, name, unit, qty, price, is_custom }
     let lastCalculated = null;
 
     // History State
@@ -1593,6 +1656,7 @@
       renderParts();
       renderExtraCovers();
       renderAccessories();
+      renderExpenses();
       loadHistoryBadge();
       updateLayersDropdown(25);
       calculateNow();
@@ -1741,6 +1805,7 @@
           const parsed = JSON.parse(saved);
           // Merge with defaults if new fields added
           if (!parsed.accessories) parsed.accessories = DEFAULT_SETTINGS.accessories;
+          if (!parsed.expenses || !Array.isArray(parsed.expenses)) parsed.expenses = JSON.parse(JSON.stringify(DEFAULT_SETTINGS.expenses));
           if (!parsed.general) {
             parsed.general = JSON.parse(JSON.stringify(DEFAULT_SETTINGS.general));
           } else {
@@ -1862,6 +1927,16 @@
         if (priceInput) s.price = parseFloat(priceInput.value) || s.price;
       });
 
+      // Save additional expenses
+      if (!appSettings.expenses) appSettings.expenses = [];
+      appSettings.expenses.forEach((e, idx) => {
+        const nameInput = document.getElementById(`set_exp_name_${idx}`);
+        const unitInput = document.getElementById(`set_exp_unit_${idx}`);
+        const priceInput = document.getElementById(`set_exp_price_${idx}`);
+        if (nameInput) e.name = nameInput.value;
+        if (unitInput) e.unit = unitInput.value;
+        if (priceInput) e.price = parseFloat(priceInput.value) || e.price;
+      });
       
       // Cloud Sync Settings
       if (!appSettings.cloud_sync) appSettings.cloud_sync = {};
@@ -1887,8 +1962,10 @@
       populateSelectOptions();
       renderExtraCovers();
       renderAccessories();
+      renderExpenses();
       calculateNow();
       renderBallisticsSettings();
+      renderExpensesSettingsTable();
       populateSelectOptions();
       updateLayersDropdown();
       if (typeof calculateNow === "function") calculateNow();
@@ -1909,6 +1986,7 @@
       renderSettingsForm();
       renderExtraCovers();
       renderAccessories();
+      renderExpenses();
       calculateNow();
       showToast("Справочники сброшены к начальным значениям");
     }
@@ -2269,6 +2347,118 @@
       container.innerHTML = html;
     }
 
+    // ================= ADDITIONAL EXPENSES (ДОПОЛНИТЕЛЬНЫЕ РАСХОДЫ) =================
+    function addExpenseRow() {
+      if (!appSettings.expenses || appSettings.expenses.length === 0) {
+        appSettings.expenses = JSON.parse(JSON.stringify(DEFAULT_SETTINGS.expenses));
+      }
+      const defaultExp = appSettings.expenses[0] || { code: "EXP_1", name: "Аренда помещения", unit: "руб", price: 50.0 };
+      expenses.push({
+        id: Date.now() + Math.floor(Math.random() * 1000),
+        code: defaultExp.code,
+        name: defaultExp.name,
+        unit: defaultExp.unit || "руб",
+        qty: 1,
+        price: defaultExp.price || 0,
+        is_custom: false
+      });
+      renderExpenses();
+      calculateNow();
+      showToast("Добавлен расход");
+    }
+
+    function removeExpenseRow(idx) {
+      expenses.splice(idx, 1);
+      renderExpenses();
+      calculateNow();
+    }
+
+    function onExpenseSelectChanged(idx, code) {
+      if (!expenses[idx]) return;
+      if (code === "__CUSTOM__") {
+        expenses[idx].code = "__CUSTOM__";
+        expenses[idx].name = "Свой расход";
+        expenses[idx].unit = "руб";
+        expenses[idx].price = 100.0;
+        expenses[idx].is_custom = true;
+      } else {
+        const found = (appSettings.expenses || []).find(e => e.code === code);
+        if (found) {
+          expenses[idx].code = found.code;
+          expenses[idx].name = found.name;
+          expenses[idx].unit = found.unit || "руб";
+          expenses[idx].price = found.price || 0;
+          expenses[idx].is_custom = false;
+        }
+      }
+      renderExpenses();
+      calculateNow();
+    }
+
+    function updateExpenseField(idx, field, val) {
+      if (!expenses[idx]) return;
+      expenses[idx][field] = val;
+      renderExpenses();
+      calculateNow();
+    }
+
+    function renderExpenses() {
+      const container = document.getElementById("expenses-container");
+      if (!container) return;
+
+      if (!expenses || expenses.length === 0) {
+        container.innerHTML = '<p class="text-[11px] text-muted italic">Дополнительные расходы не добавлены. Нажмите «+ Добавить расход», чтобы учесть аренду, работу персонала, амортизацию или другие накладные статьи.</p>';
+        return;
+      }
+
+      let html = "";
+      expenses.forEach((item, idx) => {
+        let optionsHtml = "";
+        (appSettings.expenses || []).forEach(e => {
+          const isSel = e.code === item.code;
+          optionsHtml += `<option value="${e.code}" ${isSel ? 'selected' : ''}>${e.name} (${e.price} ₽/${e.unit || 'руб'})</option>`;
+        });
+        optionsHtml += `<option value="__CUSTOM__" ${item.is_custom ? 'selected' : ''}>+ Свой расход (ручной ввод)</option>`;
+
+        html += `
+          <div class="p-2.5 rounded-xl border border-card bg-theme-light/10 flex flex-wrap sm:flex-nowrap items-center gap-2 text-xs">
+            <div class="flex-1 min-w-[140px]">
+              <label class="block text-[10px] text-muted mb-0.5">Статья расхода</label>
+              <select onchange="onExpenseSelectChanged(${idx}, this.value)" class="input-theme w-full rounded-lg p-1.5 text-xs font-medium">
+                ${optionsHtml}
+              </select>
+            </div>
+            ${item.is_custom ? `
+            <div class="w-32">
+              <label class="block text-[10px] text-muted mb-0.5">Название</label>
+              <input type="text" value="${item.name}" oninput="updateExpenseField(${idx}, 'name', this.value)" placeholder="Напр. Доставка" class="input-theme w-full rounded-lg p-1.5 text-xs font-medium">
+            </div>` : ''}
+            <div class="w-20">
+              <label class="block text-[10px] text-muted mb-0.5">Кол-во</label>
+              <input type="number" step="0.1" min="0" value="${item.qty}" oninput="updateExpenseField(${idx}, 'qty', parseFloat(this.value)||0)" class="input-theme w-full rounded-lg p-1.5 text-xs font-mono text-center font-bold">
+            </div>
+            <div class="w-16">
+              <label class="block text-[10px] text-muted mb-0.5">Ед. изм.</label>
+              <input type="text" value="${item.unit || 'руб'}" oninput="updateExpenseField(${idx}, 'unit', this.value)" class="input-theme w-full rounded-lg p-1.5 text-xs text-center font-medium">
+            </div>
+            <div class="w-20">
+              <label class="block text-[10px] text-muted mb-0.5">Цена/ед.</label>
+              <input type="number" step="0.5" min="0" value="${item.price}" oninput="updateExpenseField(${idx}, 'price', parseFloat(this.value)||0)" class="input-theme w-full rounded-lg p-1.5 text-xs font-mono text-center">
+            </div>
+            <div class="w-24 text-right">
+              <span class="block text-[10px] text-muted mb-0.5">Сумма</span>
+              <span class="font-mono font-bold text-main">${((item.qty || 0) * (item.price || 0)).toFixed(2)} ₽</span>
+            </div>
+            <button type="button" onclick="removeExpenseRow(${idx})" class="text-muted hover:text-rose-400 p-1.5 transition ml-1" title="Удалить расход">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
     // ================= PARTS MANAGEMENT (FOCUS-SAFE) =================
     function renderParts() {
       const tbody = document.getElementById("parts-body");
@@ -2430,6 +2620,14 @@
         accessoriesCost += (acc.qty * acc.price);
       });
 
+      // Additional Expenses (Дополнительные расходы: аренда, сотрудники и пр.)
+      let expensesCost = 0;
+      expenses.forEach(exp => {
+        const q = parseFloat(exp.qty) || 0;
+        const p = parseFloat(exp.price) || 0;
+        expensesCost += (q * p);
+      });
+
       // Stickers
       let stickerCost = 0;
       const stickerCode = document.getElementById("sticker_code").value;
@@ -2458,7 +2656,7 @@
       const workRate = !isNaN(workRateInput) ? workRateInput : appSettings.general.work_price_per_part;
       const workCost = totalPartsCount * workRate;
 
-      const totalCost = materialsCost + workCost;
+      const totalCost = materialsCost + workCost + expensesCost;
 
       const customMarkupInput = parseFloat(document.getElementById("custom_markup").value);
       const defaultMult = isAramid ? (appSettings.general.aramid_default_multiplier || 2.625) : (appSettings.general.svmp_default_multiplier || 3.465);
@@ -2478,6 +2676,7 @@
         extraCoversCost,
         totalCoverCost,
         accessoriesCost,
+        expensesCost,
         stickerCost,
         paperCost,
         edgingCost,
@@ -2526,6 +2725,20 @@
         }
       }
 
+      // Expenses row in breakdown
+      const rowExpenses = document.getElementById("row-expenses");
+      const resExpensesCount = document.getElementById("res-expenses-count");
+      const resExpensesCost = document.getElementById("res-expenses-cost");
+      if (rowExpenses) {
+        if (expenses.length > 0) {
+          rowExpenses.classList.remove("hidden");
+          if (resExpensesCount) resExpensesCount.innerText = expenses.length;
+          if (resExpensesCost) resExpensesCost.innerText = expensesCost.toFixed(2);
+        } else {
+          rowExpenses.classList.add("hidden");
+        }
+      }
+
       document.getElementById("res-sticker-cost").innerText = stickerCost.toFixed(2);
       document.getElementById("res-paper-cost").innerText = paperCost.toFixed(2);
       document.getElementById("res-edging-cost").innerText = edgingCost.toFixed(2);
@@ -2540,11 +2753,11 @@
       document.getElementById("res-perimeter-total").innerText = `${totalPerimeterM.toFixed(2)} м`;
 
       // 3. Render All Layers inside Hero Price Card
-      renderHeroAllLayers(totalSingleAreaM2, totalPerimeterM, totalPartsCount, petCost, totalCoverCost, accessoriesCost, stickerCost, workCost, (!isNaN(customMarkupInput) && customMarkupInput > 0) ? customMarkupInput : null);
+      renderHeroAllLayers(totalSingleAreaM2, totalPerimeterM, totalPartsCount, petCost, totalCoverCost, accessoriesCost, stickerCost, workCost, expensesCost, (!isNaN(customMarkupInput) && customMarkupInput > 0) ? customMarkupInput : null);
     }
 
     // Render Compact All Layers Comparison inside Hero Card
-    function renderHeroAllLayers(singleAreaM2, perimM, partsCount, petCost, coverCost, accessoriesCost, stickerCost, workCost, customMult) {
+    function renderHeroAllLayers(singleAreaM2, perimM, partsCount, petCost, coverCost, accessoriesCost, stickerCost, workCost, expensesCost, customMult) {
       const container = document.getElementById("hero-all-layers-container");
       if (!container) return;
 
@@ -2586,7 +2799,7 @@
             if (incEdging) aramidExtra += (perimM || 0) * (appSettings.general.aramid_edging_price_per_m || 5.0);
           }
 
-          const totCost = bCost + petCost + coverCost + accessoriesCost + stickerCost + workCost + aramidExtra;
+          const totCost = bCost + petCost + coverCost + accessoriesCost + stickerCost + workCost + (expensesCost || 0) + aramidExtra;
           const raw = totCost * mult;
           // Exact same rounding as calculateNow to prevent price jumping!
           const price = raw > 0 ? Math.ceil(Math.round(raw * 10000) / 10000 / 100) * 100 : 0;
@@ -2673,6 +2886,7 @@ function getCurrentUserIdentifier() {
 
       let extraCoversStr = extraCovers.length > 0 ? "\nДополнительные ткани:\n" + extraCovers.map(e => `  • ${e.fabric_name || e.material} (${e.label || ''}, ${e.area_mult || 1}×)`).join("\n") : "";
       let accStr = accessories.length > 0 ? "\nФурнитура и опции:\n" + accessories.map(a => `  • ${a.name}: ${a.qty !== undefined ? a.qty : a.quantity} ${a.unit || 'шт'} (по ${a.price} ₽)`).join("\n") : "";
+      let expStr = expenses.length > 0 ? "\nДополнительные расходы:\n" + expenses.map(e => `  • ${e.name}: ${e.qty !== undefined ? e.qty : 1} ${e.unit || 'руб'} (по ${e.price} ₽)`).join("\n") : "";
 
       // Quick prices
       let singleArea = 0;
@@ -2713,6 +2927,13 @@ function getCurrentUserIdentifier() {
         accCost += (q * p);
       });
 
+      let expCost = 0;
+      expenses.forEach(e => {
+        const q = parseFloat(e.qty !== undefined ? e.qty : 1) || 0;
+        const p = parseFloat(e.price) || 0;
+        expCost += (q * p);
+      });
+
       let stCost = 0;
       const stickerCode = document.getElementById("sticker_code").value;
       const stickerQty = parseInt(document.getElementById("sticker_qty").value) || 0;
@@ -2740,7 +2961,7 @@ function getCurrentUserIdentifier() {
       const svmpMult = isStandardPreset ? (svmpMat.default_multiplier || appSettings.general.svmp_default_multiplier || 3.465) : customMarkupVal;
       const aramidMult = isStandardPreset ? (aramidMat.default_multiplier || appSettings.general.aramid_default_multiplier || 2.625) : customMarkupVal;
 
-      const commonOtherCost = petCost + coverCost + extraCoversCost + accCost + stCost + workCost;
+      const commonOtherCost = petCost + coverCost + extraCoversCost + accCost + expCost + stCost + workCost;
 
       const getSvmpP = (l) => {
         const t = (singleArea * l * svmpPrice) + commonOtherCost;
@@ -2786,7 +3007,7 @@ ${svmpLines}
 Материал: АРАМИД (Тварон / Кевлар):
 ${aramidLines}
 
-Комплектация: Чехол (${coverMat}, ${twoSided}), подпорка ПЭТ, маркировка (${sticker}).${extraCoversStr}${accStr}
+Комплектация: Чехол (${coverMat}, ${twoSided}), подпорка ПЭТ, маркировка (${sticker}).${extraCoversStr}${accStr}${expStr}
 Дата: ${new Date().toLocaleDateString("ru-RU")}
 Создано в Рассчётник blstcs.ru`;
 
@@ -2853,6 +3074,7 @@ ${aramidLines}
         include_pet: document.getElementById("include_pet").checked,
         extra_covers: JSON.parse(JSON.stringify(extraCovers)),
         accessories: JSON.parse(JSON.stringify(accessories)),
+        expenses: JSON.parse(JSON.stringify(expenses)),
         sticker_code: document.getElementById("sticker_code").value,
         sticker_qty: parseInt(document.getElementById("sticker_qty").value) || 0,
         custom_markup: document.getElementById("custom_markup").value,
@@ -3068,6 +3290,13 @@ ${aramidLines}
       }
       renderAccessories();
 
+      if (item.expenses) {
+        expenses = JSON.parse(JSON.stringify(item.expenses));
+      } else {
+        expenses = [];
+      }
+      renderExpenses();
+
       if (item.parts && item.parts.length > 0) {
         parts = JSON.parse(JSON.stringify(item.parts));
       } else if (item.parts_summary) {
@@ -3162,9 +3391,11 @@ ${aramidLines}
       parts = [{ part_number: 1, length_cm: 20, width_cm: 20, perimeter_mm: 800, quantity: 1 }];
       extraCovers = [];
       accessories = [];
+      expenses = [];
       renderParts();
       renderExtraCovers();
       renderAccessories();
+      renderExpenses();
       calculateNow();
       showToast("Форма очищена");
     }
@@ -3185,9 +3416,11 @@ ${aramidLines}
       parts = JSON.parse(JSON.stringify(t.parts));
       extraCovers = [];
       accessories = [];
+      expenses = [];
       renderParts();
       renderExtraCovers();
       renderAccessories();
+      renderExpenses();
       calculateNow();
       showToast(`Загружен шаблон: ${t.name}`);
     }
@@ -3220,6 +3453,7 @@ ${aramidLines}
       renderCoversSettingsTable();
       renderAccessoriesSettingsTable();
       renderStickersSettingsTable();
+      renderExpensesSettingsTable();
 
       renderBallisticsSettings();
 
@@ -3406,6 +3640,44 @@ ${aramidLines}
         document.getElementById("setting_security_enabled").checked = (appSettings.security && appSettings.security.enabled !== undefined) ? appSettings.security.enabled : true;
       }
       updateSecurityBadge();
+    }
+
+    // Additional Expenses Table in Settings
+    function renderExpensesSettingsTable() {
+      const expBody = document.getElementById("settings-expenses-body");
+      if (!expBody) return;
+      expBody.innerHTML = "";
+      if (!appSettings.expenses) appSettings.expenses = [];
+      appSettings.expenses.forEach((e, idx) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td class="py-2 px-2 font-mono text-muted text-xs">${e.code}</td>
+          <td class="py-2 px-2"><input type="text" value="${e.name}" id="set_exp_name_${idx}" class="input-theme w-full rounded p-1 text-xs font-medium"></td>
+          <td class="py-2 px-2"><input type="text" value="${e.unit || 'руб'}" id="set_exp_unit_${idx}" class="input-theme w-20 rounded p-1 text-xs text-center font-medium"></td>
+          <td class="py-2 px-2"><input type="number" step="0.5" value="${e.price}" id="set_exp_price_${idx}" class="input-theme w-24 rounded p-1 text-xs font-mono"></td>
+          <td class="py-2 px-1 text-center"><button onclick="removeExpenseSettingsRow(${idx})" class="text-muted hover:text-rose-400 p-1" title="Удалить расход"><i class="fa-solid fa-trash-can"></i></button></td>
+        `;
+        expBody.appendChild(row);
+      });
+    }
+
+    function addExpenseSettingsRow() {
+      if (!appSettings.expenses) appSettings.expenses = [];
+      const num = appSettings.expenses.length + 1;
+      appSettings.expenses.push({
+        code: `EXP_${num}`,
+        name: `Новый расход ${num}`,
+        unit: "руб",
+        price: 100.0
+      });
+      renderExpensesSettingsTable();
+      showToast("Расход добавлен в справочник. Не забудьте нажать «Сохранить настройки».");
+    }
+
+    function removeExpenseSettingsRow(idx) {
+      if (!appSettings.expenses || appSettings.expenses.length <= 1) return;
+      appSettings.expenses.splice(idx, 1);
+      renderExpensesSettingsTable();
     }
 
     // ================= GEOMETRY TAB LOGIC =================
@@ -3779,6 +4051,14 @@ ${aramidLines}
         accessoriesCost += (q * p);
       });
 
+      // Additional Expenses (Дополнительные расходы)
+      let expensesCost = 0;
+      expenses.forEach(e => {
+        const q = parseFloat(e.qty !== undefined ? e.qty : e.quantity) || 0;
+        const p = parseFloat(e.price) || 0;
+        expensesCost += (q * p);
+      });
+
       // Stickers (Маркировка)
       let stickerCost = 0;
       if (stickerCode && stickerQty > 0) {
@@ -3793,7 +4073,7 @@ ${aramidLines}
       const workCost = partsCount * workRate;
 
       const totalCoverCost = coverCost + extraCoversCost;
-      const commonBaseCost = petCost + totalCoverCost + accessoriesCost + stickerCost + workCost;
+      const commonBaseCost = petCost + totalCoverCost + accessoriesCost + expensesCost + stickerCost + workCost;
 
       const mats = (appSettings.materials && appSettings.materials.length > 0) ? appSettings.materials : DEFAULT_SETTINGS.materials;
       let addedCount = 0;
@@ -3835,6 +4115,7 @@ ${aramidLines}
             include_pet: document.getElementById("include_pet").checked,
             extra_covers: JSON.parse(JSON.stringify(extraCovers)),
             accessories: JSON.parse(JSON.stringify(accessories)),
+            expenses: JSON.parse(JSON.stringify(expenses)),
             sticker_code: stickerCode,
             sticker_qty: stickerQty,
             custom_markup: customMarkupInput,
@@ -3906,7 +4187,7 @@ ${aramidLines}
       }, 60000);
     }
 
-    const GAS_SCRIPT_CODE = "/**\n * BLSTCS.RU - Google Apps Script \u0434\u043b\u044f \u0441\u0438\u043d\u0445\u0440\u043e\u043d\u0438\u0437\u0430\u0446\u0438\u0438 \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432 \u0431\u0430\u043b\u043b\u0438\u0441\u0442\u0438\u043a\u0438, \u0431\u0430\u0437\u044b \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0435\u0439 \u0438 \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043a (v3.6)\n * \u0422\u0430\u0431\u043b\u0438\u0446\u0430: \"\u0420\u0430\u0441\u0447\u0435\u0442 \u0431\u0430\u043b\u043b\u0438\u0441\u0442\u0438\u043a\u0438\" (https://docs.google.com/spreadsheets/d/1QsGYXKAYsQOCguMVwBq-BhCaeRhzL33YVekkr49RYM8/edit)\n * \u0412\u0435\u0431-\u043f\u0440\u0438\u043b\u043e\u0436\u0435\u043d\u0438\u0435: https://script.google.com/macros/s/AKfycbxGn3R0uG1EJdR3lWs_zJrjhxk_v4SDr_sGdHiOGk-6Q5jJM5M8gEa0FFejOobHnQAN/exec\n * \n * \u0412\u0410\u0416\u041d\u041e \u041f\u0420\u0418 \u041e\u0411\u041d\u041e\u0412\u041b\u0415\u041d\u0418\u0418 \u0421\u041a\u0420\u0418\u041f\u0422\u0410:\n * 1. \"\u0420\u0430\u0437\u0432\u0435\u0440\u043d\u0443\u0442\u044c\" (Deploy) -> \"\u0423\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435 \u0440\u0430\u0437\u0432\u0435\u0440\u0442\u044b\u0432\u0430\u043d\u0438\u044f\u043c\u0438\" (Manage deployments).\n * 2. \u041d\u0430\u0436\u043c\u0438\u0442\u0435 \u0438\u043a\u043e\u043d\u043a\u0443 \u043a\u0430\u0440\u0430\u043d\u0434\u0430\u0448\u0430 (\u0420\u0435\u0434\u0430\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u0442\u044c).\n * 3. \u0412 \u043f\u043e\u043b\u0435 \"\u0412\u0435\u0440\u0441\u0438\u044f\" \u0432\u044b\u0431\u0435\u0440\u0438\u0442\u0435: \"\u041d\u043e\u0432\u0430\u044f \u0432\u0435\u0440\u0441\u0438\u044f\" (New version).\n * 4. \u041d\u0430\u0436\u043c\u0438\u0442\u0435 \"\u0420\u0430\u0437\u0432\u0435\u0440\u043d\u0443\u0442\u044c\" (Deploy).\n */\n\nvar SHEET_HISTORY = '\u0418\u0441\u0442\u043e\u0440\u0438\u044f \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432';\nvar SHEET_USERS = '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0438';\nvar SHEET_SETTINGS = '\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438';\n\n// ================= GET \u0417\u0410\u041f\u0420\u041e\u0421\u042b =================\nfunction doGet(e) {\n  try {\n    var p = (e && e.parameter) ? e.parameter : {};\n    var action = p.action || 'ping';\n    var ss = SpreadsheetApp.getActiveSpreadsheet();\n\n    // 1. \u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u0441\u0432\u044f\u0437\u0438 (ping)\n    if (action === 'ping') {\n      var histSheet = getOrCreateHistorySheet(ss);\n      var userSheet = getOrCreateUsersSheet(ss);\n      var setSheet = getOrCreateSettingsSheet(ss);\n      return jsonResponse({\n        status: 'ok',\n        message: 'BLSTCS Google Sheets API v3.6 \u043f\u043e\u0434\u043a\u043b\u044e\u0447\u0435\u043d\u043e \u0443\u0441\u043f\u0435\u0448\u043d\u043e!',\n        spreadsheet: ss.getName(),\n        history_rows: Math.max(0, histSheet.getLastRow() - 1),\n        users_count: Math.max(0, userSheet.getLastRow() - 1),\n        has_settings: setSheet.getLastRow() > 1,\n        time: new Date().toISOString()\n      }, p.callback);\n    }\n\n    // 2. \u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f \u043f\u0440\u0438 \u0432\u0445\u043e\u0434\u0435 \u043d\u0430 \u0441\u0430\u0439\u0442 (Verify User / Login)\n    if (action === 'verify_user') {\n      var uSheet = getOrCreateUsersSheet(ss);\n      var res = verifyUserInSheet(uSheet, p.login, p.password, p.password_hash);\n      return jsonResponse(res, p.callback);\n    }\n\n    // 3. \u041f\u043e\u043b\u0443\u0447\u0435\u043d\u0438\u0435 \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043a \u0441\u043f\u0440\u0430\u0432\u043e\u0447\u043d\u0438\u043a\u043e\u0432 (Get Settings)\n    if (action === 'get_settings') {\n      var sSheet = getOrCreateSettingsSheet(ss);\n      var settings = readSettingsFromSheet(sSheet);\n      return jsonResponse({\n        status: 'ok',\n        settings: settings,\n        updated_at: new Date().toISOString()\n      }, p.callback);\n    }\n\n    // 4. \u041f\u043e\u043b\u0443\u0447\u0435\u043d\u0438\u0435 \u0438\u0441\u0442\u043e\u0440\u0438\u0438 \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432 (Download History)\n    if (action === 'get_history') {\n      var sheet = getOrCreateHistorySheet(ss);\n      var data = sheet.getDataRange().getValues();\n\n      if (data.length <= 1) {\n        return jsonResponse({ status: 'ok', count: 0, data: [] }, p.callback);\n      }\n\n      var rows = [];\n      for (var i = 1; i < data.length; i++) {\n        var r = data[i];\n        if (!r[0] && !r[1] && !r[2]) continue;\n        rows.push({\n          id: r[0],\n          created_at: r[1] ? (r[1] instanceof Date ? r[1].toLocaleString(\"ru-RU\") : r[1].toString()) : '',\n          product_name: r[2] || '',\n          product_code: r[3] || '',\n          material: r[4] || '',\n          layers: r[5] || '',\n          single_area: r[6] || '',\n          cover_material: r[7] || '',\n          accessories_summary: r[8] || '',\n          material_cost: r[9] || 0,\n          work_cost: r[10] || 0,\n          total_cost: r[11] || 0,\n          wholesale_price: r[12] || 0,\n          sale_price: r[13] || 0,\n          profit: r[14] || 0,\n          weight: r[15] || 0,\n          author: r[16] || '',\n          parts_summary: r[17] || ''\n        });\n      }\n      return jsonResponse({ status: 'ok', count: rows.length, data: rows }, p.callback);\n    }\n\n    // 5. \u041f\u043e\u043b\u0443\u0447\u0435\u043d\u0438\u0435 \u0441\u043f\u0438\u0441\u043a\u0430 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0435\u0439 (\u0434\u043b\u044f \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u0430)\n    if (action === 'get_users') {\n      var uSheet2 = getOrCreateUsersSheet(ss);\n      var uData = uSheet2.getDataRange().getValues();\n      var users = [];\n      for (var j = 1; j < uData.length; j++) {\n        var u = uData[j];\n        if (!u[1]) continue;\n        users.push({\n          id: u[0],\n          login: u[1],\n          role: u[4] || '\u0421\u043e\u0442\u0440\u0443\u0434\u043d\u0438\u043a',\n          name: u[5] || u[1],\n          status: u[6] || '\u0410\u043a\u0442\u0438\u0432\u0435\u043d',\n          created_at: u[7] || '',\n          last_login: u[8] || ''\n        });\n      }\n      return jsonResponse({ status: 'ok', count: users.length, users: users }, p.callback);\n    }\n\n    return jsonResponse({ status: 'ok', message: 'BLSTCS API active' }, p.callback);\n\n  } catch (err) {\n    return jsonResponse({ status: 'error', message: err.toString() }, p.callback);\n  }\n}\n\n// ================= POST \u0417\u0410\u041f\u0420\u041e\u0421\u042b =================\nfunction doPost(e) {\n  try {\n    var body = e.postData ? e.postData.contents : '';\n    var payload = {};\n    if (body) {\n      try { payload = JSON.parse(body); } catch (e1) { payload = {}; }\n    }\n    if ((!payload || Object.keys(payload).length === 0) && e.parameter) {\n      payload = e.parameter;\n    }\n\n    var action = payload.action || 'save_history';\n    var ss = SpreadsheetApp.getActiveSpreadsheet();\n\n    // 1. \u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u0435 \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432 \u0432 \u043b\u0438\u0441\u0442 \"\u0418\u0441\u0442\u043e\u0440\u0438\u044f \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432\" (\u0441 \u0434\u0435\u0434\u0443\u043f\u043b\u0438\u043a\u0430\u0446\u0438\u0435\u0439)\n    if (action === 'save_history') {\n      var histSheet = getOrCreateHistorySheet(ss);\n      var records = payload.records || (payload.record ? [payload.record] : []);\n\n      var existingData = histSheet.getDataRange().getValues();\n      var existingKeys = {};\n      for (var k = 1; k < existingData.length; k++) {\n        var exRow = existingData[k];\n        var idKey = exRow[0] ? exRow[0].toString() : '';\n        var exDate = exRow[1] ? (exRow[1] instanceof Date ? exRow[1].toLocaleString(\"ru-RU\") : exRow[1].toString()) : '';\n        var matchKey = exDate + '|' + (exRow[2] || '') + '|' + (exRow[4] || '') + '|' + (exRow[5] || '');\n        if (idKey) existingKeys[idKey] = true;\n        if (matchKey) existingKeys[matchKey] = true;\n      }\n\n      var addedCount = 0;\n      for (var i = 0; i < records.length; i++) {\n        var r = records[i];\n        if (!r) continue;\n\n        var rIdKey = r.id ? r.id.toString() : '';\n        var rDate = r.created_at ? (r.created_at.indexOf('T') !== -1 ? new Date(r.created_at).toLocaleString(\"ru-RU\") : r.created_at.toString()) : '';\n        var rMatchKey = rDate + '|' + (r.product_name || '') + '|' + (r.material || '') + '|' + (r.layers || '');\n\n        if (existingKeys[rIdKey] || existingKeys[rMatchKey]) {\n          continue; // \u0423\u0436\u0435 \u0435\u0441\u0442\u044c \u0432 \u0442\u0430\u0431\u043b\u0438\u0446\u0435, \u043f\u0440\u043e\u043f\u0443\u0441\u043a\u0430\u0435\u043c\n        }\n        existingKeys[rIdKey] = true;\n        existingKeys[rMatchKey] = true;\n\n        histSheet.appendRow([\n          r.id || (Date.now() + '_' + i),\n          r.created_at || new Date().toLocaleString(\"ru-RU\"),\n          r.product_name || '\u0411\u0430\u043b\u043b\u0438\u0441\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u043f\u0430\u043a\u0435\u0442',\n          r.product_code || '',\n          r.material || '',\n          r.layers || '',\n          r.single_area ? Number(r.single_area).toFixed(4) : '',\n          r.cover_summary || r.cover_material || '',\n          r.accessories_summary || '',\n          r.material_cost ? Math.round(r.material_cost) : '',\n          r.work_cost ? Math.round(r.work_cost) : '',\n          r.total_cost ? Math.round(r.total_cost) : '',\n          r.wholesale_price ? Math.round(r.wholesale_price) : '',\n          r.sale_price ? Math.round(r.sale_price) : '',\n          r.profit ? Math.round(r.profit) : '',\n          r.weight ? Number(r.weight).toFixed(3) : '',\n          r.author || payload.device_name || '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c',\n          r.parts_summary || ''\n        ]);\n        addedCount++;\n      }\n\n      return jsonResponse({\n        status: 'ok',\n        message: '\u0423\u0441\u043f\u0435\u0448\u043d\u043e \u0434\u043e\u0431\u0430\u0432\u043b\u0435\u043d\u043e \u043d\u043e\u0432\u044b\u0445 \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432: ' + addedCount,\n        added_count: addedCount,\n        total_in_sheet: histSheet.getLastRow() - 1\n      });\n    }\n\n    // 2. \u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u0435 \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043a \u0432 \u043b\u0438\u0441\u0442 \"\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438\" (Save Settings)\n    if (action === 'save_settings') {\n      var setSheet = getOrCreateSettingsSheet(ss);\n      var resSettings = writeSettingsToSheet(setSheet, payload.settings);\n      return jsonResponse(resSettings);\n    }\n\n    // 3. \u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f \u0447\u0435\u0440\u0435\u0437 POST\n    if (action === 'verify_user') {\n      var userSheet = getOrCreateUsersSheet(ss);\n      var res2 = verifyUserInSheet(userSheet, payload.login, payload.password, payload.password_hash);\n      return jsonResponse(res2);\n    }\n\n    // 4. \u0421\u043e\u0437\u0434\u0430\u043d\u0438\u0435 / \u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u0435 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f \u0432 \u043b\u0438\u0441\u0442\u0435 \"\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0438\"\n    if (action === 'save_user') {\n      var userSheet2 = getOrCreateUsersSheet(ss);\n      var rows2 = userSheet2.getDataRange().getValues();\n      var targetLogin = (payload.login || '').trim();\n      var foundRowIndex = -1;\n\n      for (var m = 1; m < rows2.length; m++) {\n        if ((rows2[m][1] || '').toString().trim().toLowerCase() === targetLogin.toLowerCase()) {\n          foundRowIndex = m + 1;\n          break;\n        }\n      }\n\n      if (foundRowIndex !== -1) {\n        if (payload.password) userSheet2.getRange(foundRowIndex, 3).setValue(payload.password);\n        if (payload.password_hash) userSheet2.getRange(foundRowIndex, 4).setValue(payload.password_hash);\n        if (payload.role) userSheet2.getRange(foundRowIndex, 5).setValue(payload.role);\n        if (payload.name) userSheet2.getRange(foundRowIndex, 6).setValue(payload.name);\n        if (payload.status) userSheet2.getRange(foundRowIndex, 7).setValue(payload.status);\n        return jsonResponse({ status: 'ok', message: '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c ' + targetLogin + ' \u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d' });\n      } else {\n        var newId = 'USR-' + (rows2.length < 10 ? '00' : (rows2.length < 100 ? '0' : '')) + rows2.length;\n        userSheet2.appendRow([\n          newId,\n          targetLogin,\n          payload.password || '',\n          payload.password_hash || '',\n          payload.role || '\u0421\u043e\u0442\u0440\u0443\u0434\u043d\u0438\u043a',\n          payload.name || targetLogin,\n          payload.status || '\u0410\u043a\u0442\u0438\u0432\u0435\u043d',\n          new Date().toLocaleString(\"ru-RU\"),\n          ''\n        ]);\n        return jsonResponse({ status: 'ok', message: '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c ' + targetLogin + ' \u0441\u043e\u0437\u0434\u0430\u043d', id: newId });\n      }\n    }\n\n    return jsonResponse({ status: 'error', message: '\u041d\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043d\u043e\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435: ' + action });\n\n  } catch (err) {\n    return jsonResponse({ status: 'error', message: err.toString() });\n  }\n}\n\n// ================= \u0412\u0421\u041f\u041e\u041c\u041e\u0413\u0410\u0422\u0415\u041b\u042c\u041d\u042b\u0415 \u0424\u0423\u041d\u041a\u0426\u0418\u0418 =================\n\n// \u0427\u0442\u0435\u043d\u0438\u0435 \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043a \u0438\u0437 \u043b\u0438\u0441\u0442\u0430 \"\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438\"\nfunction readSettingsFromSheet(sheet) {\n  var data = sheet.getDataRange().getValues();\n  if (data.length <= 1) return null;\n\n  // \u041f\u0440\u043e\u0432\u0435\u0440\u044f\u0435\u043c \u043d\u0430\u043b\u0438\u0447\u0438\u0435 \u0441\u043b\u0443\u0436\u0435\u0431\u043d\u043e\u0439 \u044f\u0447\u0435\u0439\u043a\u0438 Z1 \u0441 \u043f\u043e\u043b\u043d\u044b\u043c JSON (\u0435\u0441\u043b\u0438 \u0435\u0441\u0442\u044c)\n  try {\n    var rawJson = sheet.getRange(1, 26).getValue();\n    if (rawJson && rawJson.toString().trim().startsWith('{')) {\n      return JSON.parse(rawJson);\n    }\n  } catch (e) {}\n\n  // \u0418\u043d\u0430\u0447\u0435 \u0440\u0430\u0437\u0431\u0438\u0440\u0430\u0435\u043c \u0441\u0442\u0440\u043e\u043a\u0438 \u043b\u0438\u0441\u0442\u0430\n  var s = {\n    general: {\n      pet_price_per_m2: 389.76,\n      work_price_per_part: 200.0,\n      aramid_paper_price_per_m2: 38.46,\n      aramid_edging_price_per_m: 5.0,\n      svmp_default_multiplier: 3.465,\n      aramid_default_multiplier: 2.625\n    },\n    materials: [],\n    allowed_layers: [],\n    covers: [],\n    accessories: [],\n    stickers: []\n  };\n\n  for (var i = 1; i < data.length; i++) {\n    var row = data[i];\n    var cat = (row[0] || '').toString().trim();\n    var code = (row[1] || '').toString().trim();\n    var name = (row[2] || '').toString().trim();\n    var val = parseFloat(row[3]) || 0;\n    var unit = (row[4] || '').toString().trim();\n    var extra = (row[5] || '').toString().trim();\n\n    if (cat === '\u041e\u0431\u0449\u0438\u0435 \u043d\u043e\u0440\u043c\u0430\u0442\u0438\u0432\u044b') {\n      if (code === 'pet_price_per_m2') s.general.pet_price_per_m2 = val;\n      else if (code === 'work_price_per_part') s.general.work_price_per_part = val;\n      else if (code === 'aramid_paper_price_per_m2') s.general.aramid_paper_price_per_m2 = val;\n      else if (code === 'aramid_edging_price_per_m') s.general.aramid_edging_price_per_m = val;\n      else if (code === 'svmp_default_multiplier') s.general.svmp_default_multiplier = val;\n      else if (code === 'aramid_default_multiplier') s.general.aramid_default_multiplier = val;\n    } else if (cat === '\u0411\u0430\u043b\u043b\u0438\u0441\u0442\u0438\u043a\u0430 \u0438 \u0441\u043b\u043e\u0438') {\n      var defect = 3.0;\n      var layers = [20, 25, 30, 40];\n      if (extra) {\n        var mDefect = extra.match(/\u0411\u0440\u0430\u043a:\\s*([\\d\\.]+)%/i);\n        if (mDefect) defect = parseFloat(mDefect[1]) || 3.0;\n        var mLayers = extra.match(/\u0421\u043b\u043e\u0438:\\s*([\\d\\s,]+)/i);\n        if (mLayers) {\n          layers = mLayers[1].split(',').map(function(x) { return parseInt(x.trim()); }).filter(function(n) { return !isNaN(n) && n > 0; });\n        }\n      }\n      s.materials.push({ code: code, name: name, unit: '\u043c\u00b2', price_per_m2: val, defect_pct: defect });\n      s.allowed_layers.push({ name: name, layers: layers });\n    } else if (cat === '\u0422\u043a\u0430\u043d\u0438 \u0447\u0435\u0445\u043b\u0430') {\n      var aMarkup = 5.0, dMarkup = 2.0;\n      if (extra) {\n        var ma = extra.match(/\u043f\u043b\u043e\u0449\u0430\u0434\u044c:\\s*([\\d\\.]+)%/i);\n        if (ma) aMarkup = parseFloat(ma[1]) || 5.0;\n        var md = extra.match(/\u0431\u0440\u0430\u043a:\\s*([\\d\\.]+)%/i);\n        if (md) dMarkup = parseFloat(md[1]) || 2.0;\n      }\n      s.covers.push({ code: code, name: name, price_per_m2: val, area_markup_pct: aMarkup, defect_markup_pct: dMarkup });\n    } else if (cat === '\u0424\u0443\u0440\u043d\u0438\u0442\u0443\u0440\u0430') {\n      s.accessories.push({ code: code, name: name, unit: unit || '\u0448\u0442', price: val });\n    } else if (cat === '\u041d\u0430\u043a\u043b\u0435\u0439\u043a\u0438') {\n      s.stickers.push({ code: code, name: name, price: val });\n    }\n  }\n\n  return s;\n}\n\n// \u0417\u0430\u043f\u0438\u0441\u044c \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043a \u0432 \u043b\u0438\u0441\u0442 \"\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438\"\nfunction writeSettingsToSheet(sheet, settings) {\n  if (!settings) return { status: 'error', message: '\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438 \u043d\u0435 \u043f\u0435\u0440\u0435\u0434\u0430\u043d\u044b' };\n\n  sheet.clear();\n  var headers = [\n    '\u041a\u0430\u0442\u0435\u0433\u043e\u0440\u0438\u044f',\n    '\u041f\u0430\u0440\u0430\u043c\u0435\u0442\u0440 / \u041a\u043e\u0434',\n    '\u041d\u0430\u0438\u043c\u0435\u043d\u043e\u0432\u0430\u043d\u0438\u0435',\n    '\u0417\u043d\u0430\u0447\u0435\u043d\u0438\u0435 / \u0426\u0435\u043d\u0430 (\u0440\u0443\u0431)',\n    '\u0415\u0434. \u0438\u0437\u043c.',\n    '\u0414\u043e\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0435 \u043f\u0430\u0440\u0430\u043c\u0435\u0442\u0440\u044b (\u0431\u0440\u0430\u043a %, \u043d\u0430\u0446\u0435\u043d\u043a\u0438, \u0441\u043b\u043e\u0438)'\n  ];\n  sheet.appendRow(headers);\n\n  var headerRange = sheet.getRange(1, 1, 1, headers.length);\n  headerRange.setBackground('#1e293b');\n  headerRange.setFontColor('#f8fafc');\n  headerRange.setFontWeight('bold');\n  headerRange.setHorizontalAlignment('center');\n  sheet.setFrozenRows(1);\n\n  var rows = [];\n\n  // 1. \u041e\u0431\u0449\u0438\u0435 \u043d\u043e\u0440\u043c\u0430\u0442\u0438\u0432\u044b\n  if (settings.general) {\n    var g = settings.general;\n    rows.push(['\u041e\u0431\u0449\u0438\u0435 \u043d\u043e\u0440\u043c\u0430\u0442\u0438\u0432\u044b', 'pet_price_per_m2', '1 \u043b\u0438\u0441\u0442 \u041f\u042d\u0422', g.pet_price_per_m2 || 389.76, '\u0440\u0443\u0431/\u043c\u00b2', '']);\n    rows.push(['\u041e\u0431\u0449\u0438\u0435 \u043d\u043e\u0440\u043c\u0430\u0442\u0438\u0432\u044b', 'work_price_per_part', '\u0421\u0442\u043e\u0438\u043c\u043e\u0441\u0442\u044c \u0440\u0430\u0431\u043e\u0442\u044b \u0437\u0430 \u0434\u0435\u0442\u0430\u043b\u044c', g.work_price_per_part || 200.0, '\u0440\u0443\u0431/\u0434\u0435\u0442\u0430\u043b\u044c', '']);\n    rows.push(['\u041e\u0431\u0449\u0438\u0435 \u043d\u043e\u0440\u043c\u0430\u0442\u0438\u0432\u044b', 'aramid_paper_price_per_m2', '\u0411\u0443\u043c\u0430\u0433\u0430 \u043d\u0430 \u0430\u0440\u0430\u043c\u0438\u0434', g.aramid_paper_price_per_m2 || 38.46, '\u0440\u0443\u0431/\u043c\u00b2', '']);\n    rows.push(['\u041e\u0431\u0449\u0438\u0435 \u043d\u043e\u0440\u043c\u0430\u0442\u0438\u0432\u044b', 'aramid_edging_price_per_m', '\u041e\u043a\u0430\u043d\u0442\u043e\u0432\u043a\u0430 \u043d\u0430 \u0430\u0440\u0430\u043c\u0438\u0434', g.aramid_edging_price_per_m || 5.0, '\u0440\u0443\u0431/\u043c', '']);\n    rows.push(['\u041e\u0431\u0449\u0438\u0435 \u043d\u043e\u0440\u043c\u0430\u0442\u0438\u0432\u044b', 'svmp_default_multiplier', '\u0411\u0430\u0437\u043e\u0432\u0430\u044f \u043d\u0430\u0446\u0435\u043d\u043a\u0430 \u0421\u0412\u041c\u041f\u044d', g.svmp_default_multiplier || 3.465, '\u043a\u043e\u044d\u0444\u0444.', '']);\n    rows.push(['\u041e\u0431\u0449\u0438\u0435 \u043d\u043e\u0440\u043c\u0430\u0442\u0438\u0432\u044b', 'aramid_default_multiplier', '\u0411\u0430\u0437\u043e\u0432\u0430\u044f \u043d\u0430\u0446\u0435\u043d\u043a\u0430 \u0410\u0440\u0430\u043c\u0438\u0434', g.aramid_default_multiplier || 2.625, '\u043a\u043e\u044d\u0444\u0444.', '']);\n  }\n\n  // 2. \u0411\u0430\u043b\u043b\u0438\u0441\u0442\u0438\u043a\u0430 \u0438 \u0441\u043b\u043e\u0438\n  var mats = settings.materials || [];\n  var layersList = settings.allowed_layers || [];\n\n  mats.forEach(function(m) {\n    var lObj = null;\n    if (Array.isArray(layersList)) {\n      lObj = layersList.find(function(x) { return x.name === m.name; });\n    } else if (layersList[m.name]) {\n      lObj = { name: m.name, layers: layersList[m.name] };\n    }\n    var lStr = lObj ? lObj.layers.join(', ') : '20, 25, 30, 40';\n    rows.push(['\u0411\u0430\u043b\u043b\u0438\u0441\u0442\u0438\u043a\u0430 \u0438 \u0441\u043b\u043e\u0438', m.code || m.name, m.name, m.price_per_m2, '\u0440\u0443\u0431/\u043c\u00b2', '\u0411\u0440\u0430\u043a: ' + (m.defect_pct || 3) + '% | \u0421\u043b\u043e\u0438: ' + lStr]);\n  });\n\n  // 3. \u0422\u043a\u0430\u043d\u0438 \u0447\u0435\u0445\u043b\u0430\n  (settings.covers || []).forEach(function(c) {\n    rows.push(['\u0422\u043a\u0430\u043d\u0438 \u0447\u0435\u0445\u043b\u0430', c.code || c.name, c.name, c.price_per_m2, '\u0440\u0443\u0431/\u043c\u00b2', '\u041d\u0430\u0446\u0435\u043d\u043a\u0430 \u043d\u0430 \u043f\u043b\u043e\u0449\u0430\u0434\u044c: ' + (c.area_markup_pct || 5) + '% | \u0411\u0440\u0430\u043a: ' + (c.defect_markup_pct || 2) + '%']);\n  });\n\n  // 4. \u0424\u0443\u0440\u043d\u0438\u0442\u0443\u0440\u0430\n  (settings.accessories || []).forEach(function(a) {\n    rows.push(['\u0424\u0443\u0440\u043d\u0438\u0442\u0443\u0440\u0430', a.code || a.name, a.name, a.price, a.unit || '\u0448\u0442', '']);\n  });\n\n  // 5. \u041d\u0430\u043a\u043b\u0435\u0439\u043a\u0438\n  (settings.stickers || []).forEach(function(s) {\n    rows.push(['\u041d\u0430\u043a\u043b\u0435\u0439\u043a\u0438', s.code, s.name, s.price, '\u0448\u0442', '']);\n  });\n\n  if (rows.length > 0) {\n    sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);\n  }\n\n  // \u0417\u0430\u043f\u0438\u0441\u044b\u0432\u0430\u0435\u043c \u0447\u0438\u0441\u0442\u044b\u0439 JSON \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043a \u0432 \u044f\u0447\u0435\u0439\u043a\u0443 Z1 \u0434\u043b\u044f \u0442\u043e\u0447\u043d\u043e\u0433\u043e \u0432\u043e\u0441\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u044f\n  sheet.getRange(1, 26).setValue(JSON.stringify(settings));\n\n  var widths = [160, 200, 220, 160, 110, 320];\n  for (var w = 0; w < widths.length; w++) {\n    sheet.setColumnWidth(w + 1, widths[w]);\n  }\n\n  return { status: 'ok', message: '\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438 \u0443\u0441\u043f\u0435\u0448\u043d\u043e \u0432\u044b\u0433\u0440\u0443\u0436\u0435\u043d\u044b \u0432 Google \u0422\u0430\u0431\u043b\u0438\u0446\u0443', count: rows.length };\n}\n\n// \u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f \u0432 \u0442\u0430\u0431\u043b\u0438\u0446\u0435\nfunction verifyUserInSheet(userSheet, inputLogin, inputPass, inputHash) {\n  if (!inputLogin) return { status: 'not_found', message: '\u041b\u043e\u0433\u0438\u043d \u043d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d' };\n\n  var data = userSheet.getDataRange().getValues();\n  if (data.length <= 1) return { status: 'not_found', message: '\u0421\u043f\u0438\u0441\u043e\u043a \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0435\u0439 \u043f\u0443\u0441\u0442' };\n\n  var cleanLogin = inputLogin.toString().trim().toLowerCase();\n  var cleanPass = (inputPass || '').toString();\n  var cleanHash = (inputHash || '').toString().trim().toLowerCase();\n\n  var headers = data[0].map(function(h) { return h.toString().trim().toLowerCase(); });\n  var colLogin = 1;\n  var colPlain = 2;\n  var colHash = 3;\n  var colRole = 4;\n  var colName = 5;\n  var colStatus = 6;\n  var colLastLogin = 8;\n\n  for (var i = 0; i < headers.length; i++) {\n    var h = headers[i];\n    if (h === '\u043b\u043e\u0433\u0438\u043d') colLogin = i;\n    else if (h.indexOf('\u0445\u044d\u0448') !== -1 || h.indexOf('sha') !== -1) colHash = i;\n    else if (h.indexOf('\u043f\u0430\u0440\u043e\u043b\u044c') !== -1) colPlain = i;\n    else if (h.indexOf('\u0440\u043e\u043b\u044c') !== -1) colRole = i;\n    else if (h.indexOf('\u0438\u043c\u044f') !== -1 || h.indexOf('\u0444\u0438\u043e') !== -1) colName = i;\n    else if (h.indexOf('\u0441\u0442\u0430\u0442\u0443\u0441') !== -1) colStatus = i;\n    else if (h.indexOf('\u0432\u0445\u043e\u0434') !== -1) colLastLogin = i;\n  }\n\n  for (var r = 1; r < data.length; r++) {\n    var row = data[r];\n    var rowLogin = (row[colLogin] || '').toString().trim().toLowerCase();\n\n    if (rowLogin === cleanLogin) {\n      var rowStatus = (row[colStatus] || '\u0410\u043a\u0442\u0438\u0432\u0435\u043d').toString().trim();\n      if (rowStatus.toLowerCase() !== '\u0430\u043a\u0442\u0438\u0432\u0435\u043d') {\n        return { status: 'blocked', message: '\u0423\u0447\u0435\u0442\u043d\u0430\u044f \u0437\u0430\u043f\u0438\u0441\u044c \u0437\u0430\u0431\u043b\u043e\u043a\u0438\u0440\u043e\u0432\u0430\u043d\u0430 \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u043e\u043c' };\n      }\n\n      var rowHash = (row[colHash] || '').toString().trim().toLowerCase();\n      var rowPlain = (row[colPlain] || '').toString().trim();\n\n      var match = false;\n      if (cleanHash && rowHash && cleanHash === rowHash) match = true;\n      if (cleanPass && rowPlain && cleanPass === rowPlain) match = true;\n      if (cleanPass && cleanPass === 'UnityProxy' && cleanLogin === 'admin') match = true;\n\n      if (match) {\n        if (colLastLogin !== -1 && colLastLogin < row.length) {\n          userSheet.getRange(r + 1, colLastLogin + 1).setValue(new Date().toLocaleString(\"ru-RU\"));\n        }\n        var role = (row[colRole] || '\u0421\u043e\u0442\u0440\u0443\u0434\u043d\u0438\u043a').toString().trim();\n        var name = (row[colName] || row[colLogin] || cleanLogin).toString().trim();\n        return {\n          status: 'ok',\n          login: row[colLogin],\n          role: role,\n          is_admin: (role.toLowerCase().indexOf('\u0430\u0434\u043c\u0438\u043d') !== -1 || role.toLowerCase() === 'admin'),\n          name: name\n        };\n      } else {\n        return { status: 'wrong_password', message: '\u041d\u0435\u0432\u0435\u0440\u043d\u044b\u0439 \u043f\u0430\u0440\u043e\u043b\u044c' };\n      }\n    }\n  }\n\n  return { status: 'not_found', message: '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d' };\n}\n\nfunction jsonResponse(obj, callback) {\n  var str = JSON.stringify(obj);\n  if (callback) {\n    return ContentService.createTextOutput(callback + '(' + str + ');')\n      .setMimeType(ContentService.MimeType.JAVASCRIPT);\n  }\n  return ContentService.createTextOutput(str)\n    .setMimeType(ContentService.MimeType.JSON);\n}\n\n// \u041b\u0438\u0441\u0442 1: \u0418\u0441\u0442\u043e\u0440\u0438\u044f \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432\nfunction getOrCreateHistorySheet(ss) {\n  var sheet = ss.getSheetByName(SHEET_HISTORY);\n  if (!sheet) {\n    sheet = ss.insertSheet(SHEET_HISTORY);\n    var headers = [\n      'ID \u0437\u0430\u043f\u0438\u0441\u0438',\n      '\u0414\u0430\u0442\u0430 \u0438 \u0432\u0440\u0435\u043c\u044f',\n      '\u041d\u0430\u0438\u043c\u0435\u043d\u043e\u0432\u0430\u043d\u0438\u0435 \u0438\u0437\u0434\u0435\u043b\u0438\u044f',\n      '\u0410\u0440\u0442\u0438\u043a\u0443\u043b / \u041a\u043e\u0434',\n      '\u041c\u0430\u0442\u0435\u0440\u0438\u0430\u043b',\n      '\u0421\u043b\u043e\u0451\u0432',\n      '\u041f\u043b\u043e\u0449\u0430\u0434\u044c (\u043c\u00b2)',\n      '\u0427\u0435\u0445\u043e\u043b (\u0442\u043a\u0430\u043d\u0438)',\n      '\u0424\u0443\u0440\u043d\u0438\u0442\u0443\u0440\u0430 / \u041e\u043f\u0446\u0438\u0438',\n      '\u0421\u0435\u0431\u0435\u0441\u0442\u043e\u0438\u043c\u043e\u0441\u0442\u044c \u043c\u0430\u0442\u0435\u0440. (\u0440\u0443\u0431)',\n      '\u0420\u0430\u0431\u043e\u0442\u0430 (\u0440\u0443\u0431)',\n      '\u0418\u0442\u043e\u0433\u043e \u0441\u0435\u0431\u0435\u0441\u0442\u043e\u0438\u043c\u043e\u0441\u0442\u044c (\u0440\u0443\u0431)',\n      '\u041e\u043f\u0442\u043e\u0432\u0430\u044f \u0446\u0435\u043d\u0430 (\u0440\u0443\u0431)',\n      '\u0420\u0435\u043a\u043e\u043c. \u0440\u043e\u0437\u043d\u0438\u0446\u0430 (\u0440\u0443\u0431)',\n      '\u041f\u0440\u0438\u0431\u044b\u043b\u044c \u0440\u043e\u0437\u043d\u0438\u0446\u044b (\u0440\u0443\u0431)',\n      '\u0412\u0435\u0441 (\u043a\u0433)',\n      '\u0410\u0432\u0442\u043e\u0440 / \u0423\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u043e',\n      '\u0414\u0435\u0442\u0430\u043b\u0438 \u043a\u0440\u043e\u044f'\n    ];\n    sheet.appendRow(headers);\n\n    var headerRange = sheet.getRange(1, 1, 1, headers.length);\n    headerRange.setBackground('#0f172a');\n    headerRange.setFontColor('#f8fafc');\n    headerRange.setFontWeight('bold');\n    headerRange.setHorizontalAlignment('center');\n    sheet.setFrozenRows(1);\n\n    var widths = [110, 140, 200, 120, 100, 70, 100, 160, 160, 130, 100, 140, 130, 130, 130, 80, 130, 220];\n    for (var i = 0; i < widths.length; i++) {\n      sheet.setColumnWidth(i + 1, widths[i]);\n    }\n  }\n  return sheet;\n}\n\n// \u041b\u0438\u0441\u0442 2: \u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0438\nfunction getOrCreateUsersSheet(ss) {\n  var sheet = ss.getSheetByName(SHEET_USERS);\n  if (!sheet) {\n    sheet = ss.insertSheet(SHEET_USERS);\n    var headers = [\n      'ID',\n      '\u041b\u043e\u0433\u0438\u043d',\n      '\u041f\u0430\u0440\u043e\u043b\u044c (\u043e\u0442\u043a\u0440\u044b\u0442\u044b\u0439 / \u0434\u043b\u044f \u0437\u0430\u043c\u0435\u0442\u043e\u043a)',\n      '\u0425\u044d\u0448 \u043f\u0430\u0440\u043e\u043b\u044f (SHA-256)',\n      '\u0420\u043e\u043b\u044c',\n      '\u0424\u0418\u041e / \u0418\u043c\u044f \u0441\u043e\u0442\u0440\u0443\u0434\u043d\u0438\u043a\u0430',\n      '\u0421\u0442\u0430\u0442\u0443\u0441',\n      '\u0414\u0430\u0442\u0430 \u0441\u043e\u0437\u0434\u0430\u043d\u0438\u044f',\n      '\u041f\u043e\u0441\u043b\u0435\u0434\u043d\u0438\u0439 \u0432\u0445\u043e\u0434'\n    ];\n    sheet.appendRow(headers);\n\n    var headerRange = sheet.getRange(1, 1, 1, headers.length);\n    headerRange.setBackground('#1e293b');\n    headerRange.setFontColor('#f8fafc');\n    headerRange.setFontWeight('bold');\n    headerRange.setHorizontalAlignment('center');\n    sheet.setFrozenRows(1);\n\n    sheet.appendRow([\n      'USR-001',\n      'admin',\n      'UnityProxy',\n      '75ad31cc31193c26bff6c1b871819fb5004ef13f0c6e94a3ae8e76743641d2db',\n      '\u0410\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440',\n      '\u0413\u043b\u0430\u0432\u043d\u044b\u0439 \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440',\n      '\u0410\u043a\u0442\u0438\u0432\u0435\u043d',\n      new Date().toLocaleString(\"ru-RU\"),\n      ''\n    ]);\n\n    sheet.appendRow([\n      'USR-002',\n      'user',\n      'blstcs2026',\n      'b7b260d7fe03c0e686972dc206d1270d8330e5fb38b960710bd3e40c3dfba561',\n      '\u0421\u043e\u0442\u0440\u0443\u0434\u043d\u0438\u043a',\n      '\u041c\u0435\u043d\u0435\u0434\u0436\u0435\u0440 \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432',\n      '\u0410\u043a\u0442\u0438\u0432\u0435\u043d',\n      new Date().toLocaleString(\"ru-RU\"),\n      ''\n    ]);\n  }\n  return sheet;\n}\n\n// \u041b\u0438\u0441\u0442 3: \u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438\nfunction getOrCreateSettingsSheet(ss) {\n  var sheet = ss.getSheetByName(SHEET_SETTINGS);\n  if (!sheet) {\n    sheet = ss.insertSheet(SHEET_SETTINGS);\n    var headers = [\n      '\u041a\u0430\u0442\u0435\u0433\u043e\u0440\u0438\u044f',\n      '\u041f\u0430\u0440\u0430\u043c\u0435\u0442\u0440 / \u041a\u043e\u0434',\n      '\u041d\u0430\u0438\u043c\u0435\u043d\u043e\u0432\u0430\u043d\u0438\u0435',\n      '\u0417\u043d\u0430\u0447\u0435\u043d\u0438\u0435 / \u0426\u0435\u043d\u0430 (\u0440\u0443\u0431)',\n      '\u0415\u0434. \u0438\u0437\u043c.',\n      '\u0414\u043e\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0435 \u043f\u0430\u0440\u0430\u043c\u0435\u0442\u0440\u044b (\u0431\u0440\u0430\u043a %, \u043d\u0430\u0446\u0435\u043d\u043a\u0438, \u0441\u043b\u043e\u0438)'\n    ];\n    sheet.appendRow(headers);\n\n    var headerRange = sheet.getRange(1, 1, 1, headers.length);\n    headerRange.setBackground('#1e293b');\n    headerRange.setFontColor('#f8fafc');\n    headerRange.setFontWeight('bold');\n    headerRange.setHorizontalAlignment('center');\n    sheet.setFrozenRows(1);\n  }\n  return sheet;\n}\n";
+    const GAS_SCRIPT_CODE = "/**\n * BLSTCS.RU - Google Apps Script \u0434\u043b\u044f \u0441\u0438\u043d\u0445\u0440\u043e\u043d\u0438\u0437\u0430\u0446\u0438\u0438 \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432 \u0431\u0430\u043b\u043b\u0438\u0441\u0442\u0438\u043a\u0438, \u0431\u0430\u0437\u044b \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0435\u0439 \u0438 \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043a (v3.6)\n * \u0422\u0430\u0431\u043b\u0438\u0446\u0430: \"\u0420\u0430\u0441\u0447\u0435\u0442 \u0431\u0430\u043b\u043b\u0438\u0441\u0442\u0438\u043a\u0438\" (https://docs.google.com/spreadsheets/d/1QsGYXKAYsQOCguMVwBq-BhCaeRhzL33YVekkr49RYM8/edit)\n * \u0412\u0435\u0431-\u043f\u0440\u0438\u043b\u043e\u0436\u0435\u043d\u0438\u0435: https://script.google.com/macros/s/AKfycbxGn3R0uG1EJdR3lWs_zJrjhxk_v4SDr_sGdHiOGk-6Q5jJM5M8gEa0FFejOobHnQAN/exec\n * \n * \u0412\u0410\u0416\u041d\u041e \u041f\u0420\u0418 \u041e\u0411\u041d\u041e\u0412\u041b\u0415\u041d\u0418\u0418 \u0421\u041a\u0420\u0418\u041f\u0422\u0410:\n * 1. \"\u0420\u0430\u0437\u0432\u0435\u0440\u043d\u0443\u0442\u044c\" (Deploy) -> \"\u0423\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435 \u0440\u0430\u0437\u0432\u0435\u0440\u0442\u044b\u0432\u0430\u043d\u0438\u044f\u043c\u0438\" (Manage deployments).\n * 2. \u041d\u0430\u0436\u043c\u0438\u0442\u0435 \u0438\u043a\u043e\u043d\u043a\u0443 \u043a\u0430\u0440\u0430\u043d\u0434\u0430\u0448\u0430 (\u0420\u0435\u0434\u0430\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u0442\u044c).\n * 3. \u0412 \u043f\u043e\u043b\u0435 \"\u0412\u0435\u0440\u0441\u0438\u044f\" \u0432\u044b\u0431\u0435\u0440\u0438\u0442\u0435: \"\u041d\u043e\u0432\u0430\u044f \u0432\u0435\u0440\u0441\u0438\u044f\" (New version).\n * 4. \u041d\u0430\u0436\u043c\u0438\u0442\u0435 \"\u0420\u0430\u0437\u0432\u0435\u0440\u043d\u0443\u0442\u044c\" (Deploy).\n */\n\nvar SHEET_HISTORY = '\u0418\u0441\u0442\u043e\u0440\u0438\u044f \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432';\nvar SHEET_USERS = '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0438';\nvar SHEET_SETTINGS = '\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438';\n\n// ================= GET \u0417\u0410\u041f\u0420\u041e\u0421\u042b =================\nfunction doGet(e) {\n  try {\n    var p = (e && e.parameter) ? e.parameter : {};\n    var action = p.action || 'ping';\n    var ss = SpreadsheetApp.getActiveSpreadsheet();\n\n    // 1. \u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u0441\u0432\u044f\u0437\u0438 (ping)\n    if (action === 'ping') {\n      var histSheet = getOrCreateHistorySheet(ss);\n      var userSheet = getOrCreateUsersSheet(ss);\n      var setSheet = getOrCreateSettingsSheet(ss);\n      return jsonResponse({\n        status: 'ok',\n        message: 'BLSTCS Google Sheets API v3.6 \u043f\u043e\u0434\u043a\u043b\u044e\u0447\u0435\u043d\u043e \u0443\u0441\u043f\u0435\u0448\u043d\u043e!',\n        spreadsheet: ss.getName(),\n        history_rows: Math.max(0, histSheet.getLastRow() - 1),\n        users_count: Math.max(0, userSheet.getLastRow() - 1),\n        has_settings: setSheet.getLastRow() > 1,\n        time: new Date().toISOString()\n      }, p.callback);\n    }\n\n    // 2. \u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f \u043f\u0440\u0438 \u0432\u0445\u043e\u0434\u0435 \u043d\u0430 \u0441\u0430\u0439\u0442 (Verify User / Login)\n    if (action === 'verify_user') {\n      var uSheet = getOrCreateUsersSheet(ss);\n      var res = verifyUserInSheet(uSheet, p.login, p.password, p.password_hash);\n      return jsonResponse(res, p.callback);\n    }\n\n    // 3. \u041f\u043e\u043b\u0443\u0447\u0435\u043d\u0438\u0435 \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043a \u0441\u043f\u0440\u0430\u0432\u043e\u0447\u043d\u0438\u043a\u043e\u0432 (Get Settings)\n    if (action === 'get_settings') {\n      var sSheet = getOrCreateSettingsSheet(ss);\n      var settings = readSettingsFromSheet(sSheet);\n      return jsonResponse({\n        status: 'ok',\n        settings: settings,\n        updated_at: new Date().toISOString()\n      }, p.callback);\n    }\n\n    // 4. \u041f\u043e\u043b\u0443\u0447\u0435\u043d\u0438\u0435 \u0438\u0441\u0442\u043e\u0440\u0438\u0438 \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432 (Download History)\n    if (action === 'get_history') {\n      var sheet = getOrCreateHistorySheet(ss);\n      var data = sheet.getDataRange().getValues();\n\n      if (data.length <= 1) {\n        return jsonResponse({ status: 'ok', count: 0, data: [] }, p.callback);\n      }\n\n      var rows = [];\n      for (var i = 1; i < data.length; i++) {\n        var r = data[i];\n        if (!r[0] && !r[1] && !r[2]) continue;\n        rows.push({\n          id: r[0],\n          created_at: r[1] ? (r[1] instanceof Date ? r[1].toLocaleString(\"ru-RU\") : r[1].toString()) : '',\n          product_name: r[2] || '',\n          product_code: r[3] || '',\n          material: r[4] || '',\n          layers: r[5] || '',\n          single_area: r[6] || '',\n          cover_material: r[7] || '',\n          accessories_summary: r[8] || '',\n          material_cost: r[9] || 0,\n          work_cost: r[10] || 0,\n          total_cost: r[11] || 0,\n          wholesale_price: r[12] || 0,\n          sale_price: r[13] || 0,\n          profit: r[14] || 0,\n          weight: r[15] || 0,\n          author: r[16] || '',\n          parts_summary: r[17] || ''\n        });\n      }\n      return jsonResponse({ status: 'ok', count: rows.length, data: rows }, p.callback);\n    }\n\n    // 5. \u041f\u043e\u043b\u0443\u0447\u0435\u043d\u0438\u0435 \u0441\u043f\u0438\u0441\u043a\u0430 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0435\u0439 (\u0434\u043b\u044f \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u0430)\n    if (action === 'get_users') {\n      var uSheet2 = getOrCreateUsersSheet(ss);\n      var uData = uSheet2.getDataRange().getValues();\n      var users = [];\n      for (var j = 1; j < uData.length; j++) {\n        var u = uData[j];\n        if (!u[1]) continue;\n        users.push({\n          id: u[0],\n          login: u[1],\n          role: u[4] || '\u0421\u043e\u0442\u0440\u0443\u0434\u043d\u0438\u043a',\n          name: u[5] || u[1],\n          status: u[6] || '\u0410\u043a\u0442\u0438\u0432\u0435\u043d',\n          created_at: u[7] || '',\n          last_login: u[8] || ''\n        });\n      }\n      return jsonResponse({ status: 'ok', count: users.length, users: users }, p.callback);\n    }\n\n    return jsonResponse({ status: 'ok', message: 'BLSTCS API active' }, p.callback);\n\n  } catch (err) {\n    return jsonResponse({ status: 'error', message: err.toString() }, p.callback);\n  }\n}\n\n// ================= POST \u0417\u0410\u041f\u0420\u041e\u0421\u042b =================\nfunction doPost(e) {\n  try {\n    var body = e.postData ? e.postData.contents : '';\n    var payload = {};\n    if (body) {\n      try { payload = JSON.parse(body); } catch (e1) { payload = {}; }\n    }\n    if ((!payload || Object.keys(payload).length === 0) && e.parameter) {\n      payload = e.parameter;\n    }\n\n    var action = payload.action || 'save_history';\n    var ss = SpreadsheetApp.getActiveSpreadsheet();\n\n    // 1. \u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u0435 \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432 \u0432 \u043b\u0438\u0441\u0442 \"\u0418\u0441\u0442\u043e\u0440\u0438\u044f \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432\" (\u0441 \u0434\u0435\u0434\u0443\u043f\u043b\u0438\u043a\u0430\u0446\u0438\u0435\u0439)\n    if (action === 'save_history') {\n      var histSheet = getOrCreateHistorySheet(ss);\n      var records = payload.records || (payload.record ? [payload.record] : []);\n\n      var existingData = histSheet.getDataRange().getValues();\n      var existingKeys = {};\n      for (var k = 1; k < existingData.length; k++) {\n        var exRow = existingData[k];\n        var idKey = exRow[0] ? exRow[0].toString() : '';\n        var exDate = exRow[1] ? (exRow[1] instanceof Date ? exRow[1].toLocaleString(\"ru-RU\") : exRow[1].toString()) : '';\n        var matchKey = exDate + '|' + (exRow[2] || '') + '|' + (exRow[4] || '') + '|' + (exRow[5] || '');\n        if (idKey) existingKeys[idKey] = true;\n        if (matchKey) existingKeys[matchKey] = true;\n      }\n\n      var addedCount = 0;\n      for (var i = 0; i < records.length; i++) {\n        var r = records[i];\n        if (!r) continue;\n\n        var rIdKey = r.id ? r.id.toString() : '';\n        var rDate = r.created_at ? (r.created_at.indexOf('T') !== -1 ? new Date(r.created_at).toLocaleString(\"ru-RU\") : r.created_at.toString()) : '';\n        var rMatchKey = rDate + '|' + (r.product_name || '') + '|' + (r.material || '') + '|' + (r.layers || '');\n\n        if (existingKeys[rIdKey] || existingKeys[rMatchKey]) {\n          continue; // \u0423\u0436\u0435 \u0435\u0441\u0442\u044c \u0432 \u0442\u0430\u0431\u043b\u0438\u0446\u0435, \u043f\u0440\u043e\u043f\u0443\u0441\u043a\u0430\u0435\u043c\n        }\n        existingKeys[rIdKey] = true;\n        existingKeys[rMatchKey] = true;\n\n        histSheet.appendRow([\n          r.id || (Date.now() + '_' + i),\n          r.created_at || new Date().toLocaleString(\"ru-RU\"),\n          r.product_name || '\u0411\u0430\u043b\u043b\u0438\u0441\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u043f\u0430\u043a\u0435\u0442',\n          r.product_code || '',\n          r.material || '',\n          r.layers || '',\n          r.single_area ? Number(r.single_area).toFixed(4) : '',\n          r.cover_summary || r.cover_material || '',\n          r.accessories_summary || '',\n          r.material_cost ? Math.round(r.material_cost) : '',\n          r.work_cost ? Math.round(r.work_cost) : '',\n          r.total_cost ? Math.round(r.total_cost) : '',\n          r.wholesale_price ? Math.round(r.wholesale_price) : '',\n          r.sale_price ? Math.round(r.sale_price) : '',\n          r.profit ? Math.round(r.profit) : '',\n          r.weight ? Number(r.weight).toFixed(3) : '',\n          r.author || payload.device_name || '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c',\n          r.parts_summary || ''\n        ]);\n        addedCount++;\n      }\n\n      return jsonResponse({\n        status: 'ok',\n        message: '\u0423\u0441\u043f\u0435\u0448\u043d\u043e \u0434\u043e\u0431\u0430\u0432\u043b\u0435\u043d\u043e \u043d\u043e\u0432\u044b\u0445 \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432: ' + addedCount,\n        added_count: addedCount,\n        total_in_sheet: histSheet.getLastRow() - 1\n      });\n    }\n\n    // 2. \u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u0435 \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043a \u0432 \u043b\u0438\u0441\u0442 \"\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438\" (Save Settings)\n    if (action === 'save_settings') {\n      var setSheet = getOrCreateSettingsSheet(ss);\n      var resSettings = writeSettingsToSheet(setSheet, payload.settings);\n      return jsonResponse(resSettings);\n    }\n\n    // 3. \u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f \u0447\u0435\u0440\u0435\u0437 POST\n    if (action === 'verify_user') {\n      var userSheet = getOrCreateUsersSheet(ss);\n      var res2 = verifyUserInSheet(userSheet, payload.login, payload.password, payload.password_hash);\n      return jsonResponse(res2);\n    }\n\n    // 4. \u0421\u043e\u0437\u0434\u0430\u043d\u0438\u0435 / \u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u0435 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f \u0432 \u043b\u0438\u0441\u0442\u0435 \"\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0438\"\n    if (action === 'save_user') {\n      var userSheet2 = getOrCreateUsersSheet(ss);\n      var rows2 = userSheet2.getDataRange().getValues();\n      var targetLogin = (payload.login || '').trim();\n      var foundRowIndex = -1;\n\n      for (var m = 1; m < rows2.length; m++) {\n        if ((rows2[m][1] || '').toString().trim().toLowerCase() === targetLogin.toLowerCase()) {\n          foundRowIndex = m + 1;\n          break;\n        }\n      }\n\n      if (foundRowIndex !== -1) {\n        if (payload.password) userSheet2.getRange(foundRowIndex, 3).setValue(payload.password);\n        if (payload.password_hash) userSheet2.getRange(foundRowIndex, 4).setValue(payload.password_hash);\n        if (payload.role) userSheet2.getRange(foundRowIndex, 5).setValue(payload.role);\n        if (payload.name) userSheet2.getRange(foundRowIndex, 6).setValue(payload.name);\n        if (payload.status) userSheet2.getRange(foundRowIndex, 7).setValue(payload.status);\n        return jsonResponse({ status: 'ok', message: '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c ' + targetLogin + ' \u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d' });\n      } else {\n        var newId = 'USR-' + (rows2.length < 10 ? '00' : (rows2.length < 100 ? '0' : '')) + rows2.length;\n        userSheet2.appendRow([\n          newId,\n          targetLogin,\n          payload.password || '',\n          payload.password_hash || '',\n          payload.role || '\u0421\u043e\u0442\u0440\u0443\u0434\u043d\u0438\u043a',\n          payload.name || targetLogin,\n          payload.status || '\u0410\u043a\u0442\u0438\u0432\u0435\u043d',\n          new Date().toLocaleString(\"ru-RU\"),\n          ''\n        ]);\n        return jsonResponse({ status: 'ok', message: '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c ' + targetLogin + ' \u0441\u043e\u0437\u0434\u0430\u043d', id: newId });\n      }\n    }\n\n    return jsonResponse({ status: 'error', message: '\u041d\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043d\u043e\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435: ' + action });\n\n  } catch (err) {\n    return jsonResponse({ status: 'error', message: err.toString() });\n  }\n}\n\n// ================= \u0412\u0421\u041f\u041e\u041c\u041e\u0413\u0410\u0422\u0415\u041b\u042c\u041d\u042b\u0415 \u0424\u0423\u041d\u041a\u0426\u0418\u0418 =================\n\n// \u0427\u0442\u0435\u043d\u0438\u0435 \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043a \u0438\u0437 \u043b\u0438\u0441\u0442\u0430 \"\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438\"\nfunction readSettingsFromSheet(sheet) {\n  var data = sheet.getDataRange().getValues();\n  if (data.length <= 1) return null;\n\n  // \u041f\u0440\u043e\u0432\u0435\u0440\u044f\u0435\u043c \u043d\u0430\u043b\u0438\u0447\u0438\u0435 \u0441\u043b\u0443\u0436\u0435\u0431\u043d\u043e\u0439 \u044f\u0447\u0435\u0439\u043a\u0438 Z1 \u0441 \u043f\u043e\u043b\u043d\u044b\u043c JSON (\u0435\u0441\u043b\u0438 \u0435\u0441\u0442\u044c)\n  try {\n    var rawJson = sheet.getRange(1, 26).getValue();\n    if (rawJson && rawJson.toString().trim().startsWith('{')) {\n      return JSON.parse(rawJson);\n    }\n  } catch (e) {}\n\n  // \u0418\u043d\u0430\u0447\u0435 \u0440\u0430\u0437\u0431\u0438\u0440\u0430\u0435\u043c \u0441\u0442\u0440\u043e\u043a\u0438 \u043b\u0438\u0441\u0442\u0430\n  var s = {\n    general: {\n      pet_price_per_m2: 389.76,\n      work_price_per_part: 200.0,\n      aramid_paper_price_per_m2: 38.46,\n      aramid_edging_price_per_m: 5.0,\n      svmp_default_multiplier: 3.465,\n      aramid_default_multiplier: 2.625\n    },\n    materials: [],\n    allowed_layers: [],\n    covers: [],\n    accessories: [],\n    stickers: [],\n    expenses: []\n  };\n\n  for (var i = 1; i < data.length; i++) {\n    var row = data[i];\n    var cat = (row[0] || '').toString().trim();\n    var code = (row[1] || '').toString().trim();\n    var name = (row[2] || '').toString().trim();\n    var val = parseFloat(row[3]) || 0;\n    var unit = (row[4] || '').toString().trim();\n    var extra = (row[5] || '').toString().trim();\n\n    if (cat === '\u041e\u0431\u0449\u0438\u0435 \u043d\u043e\u0440\u043c\u0430\u0442\u0438\u0432\u044b') {\n      if (code === 'pet_price_per_m2') s.general.pet_price_per_m2 = val;\n      else if (code === 'work_price_per_part') s.general.work_price_per_part = val;\n      else if (code === 'aramid_paper_price_per_m2') s.general.aramid_paper_price_per_m2 = val;\n      else if (code === 'aramid_edging_price_per_m') s.general.aramid_edging_price_per_m = val;\n      else if (code === 'svmp_default_multiplier') s.general.svmp_default_multiplier = val;\n      else if (code === 'aramid_default_multiplier') s.general.aramid_default_multiplier = val;\n    } else if (cat === '\u0411\u0430\u043b\u043b\u0438\u0441\u0442\u0438\u043a\u0430 \u0438 \u0441\u043b\u043e\u0438') {\n      var defect = 3.0;\n      var layers = [20, 25, 30, 40];\n      if (extra) {\n        var mDefect = extra.match(/\u0411\u0440\u0430\u043a:\\s*([\\d\\.]+)%/i);\n        if (mDefect) defect = parseFloat(mDefect[1]) || 3.0;\n        var mLayers = extra.match(/\u0421\u043b\u043e\u0438:\\s*([\\d\\s,]+)/i);\n        if (mLayers) {\n          layers = mLayers[1].split(',').map(function(x) { return parseInt(x.trim()); }).filter(function(n) { return !isNaN(n) && n > 0; });\n        }\n      }\n      s.materials.push({ code: code, name: name, unit: '\u043c\u00b2', price_per_m2: val, defect_pct: defect });\n      s.allowed_layers.push({ name: name, layers: layers });\n    } else if (cat === '\u0422\u043a\u0430\u043d\u0438 \u0447\u0435\u0445\u043b\u0430') {\n      var aMarkup = 5.0, dMarkup = 2.0;\n      if (extra) {\n        var ma = extra.match(/\u043f\u043b\u043e\u0449\u0430\u0434\u044c:\\s*([\\d\\.]+)%/i);\n        if (ma) aMarkup = parseFloat(ma[1]) || 5.0;\n        var md = extra.match(/\u0431\u0440\u0430\u043a:\\s*([\\d\\.]+)%/i);\n        if (md) dMarkup = parseFloat(md[1]) || 2.0;\n      }\n      s.covers.push({ code: code, name: name, price_per_m2: val, area_markup_pct: aMarkup, defect_markup_pct: dMarkup });\n    } else if (cat === '\u0424\u0443\u0440\u043d\u0438\u0442\u0443\u0440\u0430') {\n      s.accessories.push({ code: code, name: name, unit: unit || '\u0448\u0442', price: val });\n    } else if (cat === '\u041d\u0430\u043a\u043b\u0435\u0439\u043a\u0438') {\n      s.stickers.push({ code: code, name: name, price: val });\n    } else if (cat === '\u0414\u043e\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0435 \u0440\u0430\u0441\u0445\u043e\u0434\u044b') {\n      s.expenses.push({ code: code, name: name, unit: unit || '\u0440\u0443\u0431', price: val });\n    }\n  }\n\n  return s;\n}\n\n// \u0417\u0430\u043f\u0438\u0441\u044c \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043a \u0432 \u043b\u0438\u0441\u0442 \"\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438\"\nfunction writeSettingsToSheet(sheet, settings) {\n  if (!settings) return { status: 'error', message: '\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438 \u043d\u0435 \u043f\u0435\u0440\u0435\u0434\u0430\u043d\u044b' };\n\n  sheet.clear();\n  var headers = [\n    '\u041a\u0430\u0442\u0435\u0433\u043e\u0440\u0438\u044f',\n    '\u041f\u0430\u0440\u0430\u043c\u0435\u0442\u0440 / \u041a\u043e\u0434',\n    '\u041d\u0430\u0438\u043c\u0435\u043d\u043e\u0432\u0430\u043d\u0438\u0435',\n    '\u0417\u043d\u0430\u0447\u0435\u043d\u0438\u0435 / \u0426\u0435\u043d\u0430 (\u0440\u0443\u0431)',\n    '\u0415\u0434. \u0438\u0437\u043c.',\n    '\u0414\u043e\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0435 \u043f\u0430\u0440\u0430\u043c\u0435\u0442\u0440\u044b (\u0431\u0440\u0430\u043a %, \u043d\u0430\u0446\u0435\u043d\u043a\u0438, \u0441\u043b\u043e\u0438)'\n  ];\n  sheet.appendRow(headers);\n\n  var headerRange = sheet.getRange(1, 1, 1, headers.length);\n  headerRange.setBackground('#1e293b');\n  headerRange.setFontColor('#f8fafc');\n  headerRange.setFontWeight('bold');\n  headerRange.setHorizontalAlignment('center');\n  sheet.setFrozenRows(1);\n\n  var rows = [];\n\n  // 1. \u041e\u0431\u0449\u0438\u0435 \u043d\u043e\u0440\u043c\u0430\u0442\u0438\u0432\u044b\n  if (settings.general) {\n    var g = settings.general;\n    rows.push(['\u041e\u0431\u0449\u0438\u0435 \u043d\u043e\u0440\u043c\u0430\u0442\u0438\u0432\u044b', 'pet_price_per_m2', '1 \u043b\u0438\u0441\u0442 \u041f\u042d\u0422', g.pet_price_per_m2 || 389.76, '\u0440\u0443\u0431/\u043c\u00b2', '']);\n    rows.push(['\u041e\u0431\u0449\u0438\u0435 \u043d\u043e\u0440\u043c\u0430\u0442\u0438\u0432\u044b', 'work_price_per_part', '\u0421\u0442\u043e\u0438\u043c\u043e\u0441\u0442\u044c \u0440\u0430\u0431\u043e\u0442\u044b \u0437\u0430 \u0434\u0435\u0442\u0430\u043b\u044c', g.work_price_per_part || 200.0, '\u0440\u0443\u0431/\u0434\u0435\u0442\u0430\u043b\u044c', '']);\n    rows.push(['\u041e\u0431\u0449\u0438\u0435 \u043d\u043e\u0440\u043c\u0430\u0442\u0438\u0432\u044b', 'aramid_paper_price_per_m2', '\u0411\u0443\u043c\u0430\u0433\u0430 \u043d\u0430 \u0430\u0440\u0430\u043c\u0438\u0434', g.aramid_paper_price_per_m2 || 38.46, '\u0440\u0443\u0431/\u043c\u00b2', '']);\n    rows.push(['\u041e\u0431\u0449\u0438\u0435 \u043d\u043e\u0440\u043c\u0430\u0442\u0438\u0432\u044b', 'aramid_edging_price_per_m', '\u041e\u043a\u0430\u043d\u0442\u043e\u0432\u043a\u0430 \u043d\u0430 \u0430\u0440\u0430\u043c\u0438\u0434', g.aramid_edging_price_per_m || 5.0, '\u0440\u0443\u0431/\u043c', '']);\n    rows.push(['\u041e\u0431\u0449\u0438\u0435 \u043d\u043e\u0440\u043c\u0430\u0442\u0438\u0432\u044b', 'svmp_default_multiplier', '\u0411\u0430\u0437\u043e\u0432\u0430\u044f \u043d\u0430\u0446\u0435\u043d\u043a\u0430 \u0421\u0412\u041c\u041f\u044d', g.svmp_default_multiplier || 3.465, '\u043a\u043e\u044d\u0444\u0444.', '']);\n    rows.push(['\u041e\u0431\u0449\u0438\u0435 \u043d\u043e\u0440\u043c\u0430\u0442\u0438\u0432\u044b', 'aramid_default_multiplier', '\u0411\u0430\u0437\u043e\u0432\u0430\u044f \u043d\u0430\u0446\u0435\u043d\u043a\u0430 \u0410\u0440\u0430\u043c\u0438\u0434', g.aramid_default_multiplier || 2.625, '\u043a\u043e\u044d\u0444\u0444.', '']);\n  }\n\n  // 2. \u0411\u0430\u043b\u043b\u0438\u0441\u0442\u0438\u043a\u0430 \u0438 \u0441\u043b\u043e\u0438\n  var mats = settings.materials || [];\n  var layersList = settings.allowed_layers || [];\n\n  mats.forEach(function(m) {\n    var lObj = null;\n    if (Array.isArray(layersList)) {\n      lObj = layersList.find(function(x) { return x.name === m.name; });\n    } else if (layersList[m.name]) {\n      lObj = { name: m.name, layers: layersList[m.name] };\n    }\n    var lStr = lObj ? lObj.layers.join(', ') : '20, 25, 30, 40';\n    rows.push(['\u0411\u0430\u043b\u043b\u0438\u0441\u0442\u0438\u043a\u0430 \u0438 \u0441\u043b\u043e\u0438', m.code || m.name, m.name, m.price_per_m2, '\u0440\u0443\u0431/\u043c\u00b2', '\u0411\u0440\u0430\u043a: ' + (m.defect_pct || 3) + '% | \u0421\u043b\u043e\u0438: ' + lStr]);\n  });\n\n  // 3. \u0422\u043a\u0430\u043d\u0438 \u0447\u0435\u0445\u043b\u0430\n  (settings.covers || []).forEach(function(c) {\n    rows.push(['\u0422\u043a\u0430\u043d\u0438 \u0447\u0435\u0445\u043b\u0430', c.code || c.name, c.name, c.price_per_m2, '\u0440\u0443\u0431/\u043c\u00b2', '\u041d\u0430\u0446\u0435\u043d\u043a\u0430 \u043d\u0430 \u043f\u043b\u043e\u0449\u0430\u0434\u044c: ' + (c.area_markup_pct || 5) + '% | \u0411\u0440\u0430\u043a: ' + (c.defect_markup_pct || 2) + '%']);\n  });\n\n  // 4. \u0424\u0443\u0440\u043d\u0438\u0442\u0443\u0440\u0430\n  (settings.accessories || []).forEach(function(a) {\n    rows.push(['\u0424\u0443\u0440\u043d\u0438\u0442\u0443\u0440\u0430', a.code || a.name, a.name, a.price, a.unit || '\u0448\u0442', '']);\n  });\n\n  // 5. \u041d\u0430\u043a\u043b\u0435\u0439\u043a\u0438\n  (settings.stickers || []).forEach(function(s) {\n    rows.push(['\u041d\u0430\u043a\u043b\u0435\u0439\u043a\u0438', s.code, s.name, s.price, '\u0448\u0442', '']);\n  });\n\n  // 6. \u0414\u043e\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0435 \u0440\u0430\u0441\u0445\u043e\u0434\u044b (\u0430\u0440\u0435\u043d\u0434\u0430, \u0441\u043e\u0442\u0440\u0443\u0434\u043d\u0438\u043a\u0438, \u043d\u0430\u043a\u043b\u0430\u0434\u043d\u044b\u0435)\n  (settings.expenses || []).forEach(function(e) {\n    rows.push(['\u0414\u043e\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0435 \u0440\u0430\u0441\u0445\u043e\u0434\u044b', e.code || e.name, e.name, e.price, e.unit || '\u0440\u0443\u0431', '']);\n  });\n\n  if (rows.length > 0) {\n    sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);\n  }\n\n  // \u0417\u0430\u043f\u0438\u0441\u044b\u0432\u0430\u0435\u043c \u0447\u0438\u0441\u0442\u044b\u0439 JSON \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043a \u0432 \u044f\u0447\u0435\u0439\u043a\u0443 Z1 \u0434\u043b\u044f \u0442\u043e\u0447\u043d\u043e\u0433\u043e \u0432\u043e\u0441\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u044f\n  sheet.getRange(1, 26).setValue(JSON.stringify(settings));\n\n  var widths = [160, 200, 220, 160, 110, 320];\n  for (var w = 0; w < widths.length; w++) {\n    sheet.setColumnWidth(w + 1, widths[w]);\n  }\n\n  return { status: 'ok', message: '\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438 \u0443\u0441\u043f\u0435\u0448\u043d\u043e \u0432\u044b\u0433\u0440\u0443\u0436\u0435\u043d\u044b \u0432 Google \u0422\u0430\u0431\u043b\u0438\u0446\u0443', count: rows.length };\n}\n\n// \u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f \u0432 \u0442\u0430\u0431\u043b\u0438\u0446\u0435\nfunction verifyUserInSheet(userSheet, inputLogin, inputPass, inputHash) {\n  if (!inputLogin) return { status: 'not_found', message: '\u041b\u043e\u0433\u0438\u043d \u043d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d' };\n\n  var data = userSheet.getDataRange().getValues();\n  if (data.length <= 1) return { status: 'not_found', message: '\u0421\u043f\u0438\u0441\u043e\u043a \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0435\u0439 \u043f\u0443\u0441\u0442' };\n\n  var cleanLogin = inputLogin.toString().trim().toLowerCase();\n  var cleanPass = (inputPass || '').toString();\n  var cleanHash = (inputHash || '').toString().trim().toLowerCase();\n\n  var headers = data[0].map(function(h) { return h.toString().trim().toLowerCase(); });\n  var colLogin = 1;\n  var colPlain = 2;\n  var colHash = 3;\n  var colRole = 4;\n  var colName = 5;\n  var colStatus = 6;\n  var colLastLogin = 8;\n\n  for (var i = 0; i < headers.length; i++) {\n    var h = headers[i];\n    if (h === '\u043b\u043e\u0433\u0438\u043d') colLogin = i;\n    else if (h.indexOf('\u0445\u044d\u0448') !== -1 || h.indexOf('sha') !== -1) colHash = i;\n    else if (h.indexOf('\u043f\u0430\u0440\u043e\u043b\u044c') !== -1) colPlain = i;\n    else if (h.indexOf('\u0440\u043e\u043b\u044c') !== -1) colRole = i;\n    else if (h.indexOf('\u0438\u043c\u044f') !== -1 || h.indexOf('\u0444\u0438\u043e') !== -1) colName = i;\n    else if (h.indexOf('\u0441\u0442\u0430\u0442\u0443\u0441') !== -1) colStatus = i;\n    else if (h.indexOf('\u0432\u0445\u043e\u0434') !== -1) colLastLogin = i;\n  }\n\n  for (var r = 1; r < data.length; r++) {\n    var row = data[r];\n    var rowLogin = (row[colLogin] || '').toString().trim().toLowerCase();\n\n    if (rowLogin === cleanLogin) {\n      var rowStatus = (row[colStatus] || '\u0410\u043a\u0442\u0438\u0432\u0435\u043d').toString().trim();\n      if (rowStatus.toLowerCase() !== '\u0430\u043a\u0442\u0438\u0432\u0435\u043d') {\n        return { status: 'blocked', message: '\u0423\u0447\u0435\u0442\u043d\u0430\u044f \u0437\u0430\u043f\u0438\u0441\u044c \u0437\u0430\u0431\u043b\u043e\u043a\u0438\u0440\u043e\u0432\u0430\u043d\u0430 \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u043e\u043c' };\n      }\n\n      var rowHash = (row[colHash] || '').toString().trim().toLowerCase();\n      var rowPlain = (row[colPlain] || '').toString().trim();\n\n      var match = false;\n      if (cleanHash && rowHash && cleanHash === rowHash) match = true;\n      if (cleanPass && rowPlain && cleanPass === rowPlain) match = true;\n      if (cleanPass && cleanPass === 'UnityProxy' && cleanLogin === 'admin') match = true;\n\n      if (match) {\n        if (colLastLogin !== -1 && colLastLogin < row.length) {\n          userSheet.getRange(r + 1, colLastLogin + 1).setValue(new Date().toLocaleString(\"ru-RU\"));\n        }\n        var role = (row[colRole] || '\u0421\u043e\u0442\u0440\u0443\u0434\u043d\u0438\u043a').toString().trim();\n        var name = (row[colName] || row[colLogin] || cleanLogin).toString().trim();\n        return {\n          status: 'ok',\n          login: row[colLogin],\n          role: role,\n          is_admin: (role.toLowerCase().indexOf('\u0430\u0434\u043c\u0438\u043d') !== -1 || role.toLowerCase() === 'admin'),\n          name: name\n        };\n      } else {\n        return { status: 'wrong_password', message: '\u041d\u0435\u0432\u0435\u0440\u043d\u044b\u0439 \u043f\u0430\u0440\u043e\u043b\u044c' };\n      }\n    }\n  }\n\n  return { status: 'not_found', message: '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d' };\n}\n\nfunction jsonResponse(obj, callback) {\n  var str = JSON.stringify(obj);\n  if (callback) {\n    return ContentService.createTextOutput(callback + '(' + str + ');')\n      .setMimeType(ContentService.MimeType.JAVASCRIPT);\n  }\n  return ContentService.createTextOutput(str)\n    .setMimeType(ContentService.MimeType.JSON);\n}\n\n// \u041b\u0438\u0441\u0442 1: \u0418\u0441\u0442\u043e\u0440\u0438\u044f \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432\nfunction getOrCreateHistorySheet(ss) {\n  var sheet = ss.getSheetByName(SHEET_HISTORY);\n  if (!sheet) {\n    sheet = ss.insertSheet(SHEET_HISTORY);\n    var headers = [\n      'ID \u0437\u0430\u043f\u0438\u0441\u0438',\n      '\u0414\u0430\u0442\u0430 \u0438 \u0432\u0440\u0435\u043c\u044f',\n      '\u041d\u0430\u0438\u043c\u0435\u043d\u043e\u0432\u0430\u043d\u0438\u0435 \u0438\u0437\u0434\u0435\u043b\u0438\u044f',\n      '\u0410\u0440\u0442\u0438\u043a\u0443\u043b / \u041a\u043e\u0434',\n      '\u041c\u0430\u0442\u0435\u0440\u0438\u0430\u043b',\n      '\u0421\u043b\u043e\u0451\u0432',\n      '\u041f\u043b\u043e\u0449\u0430\u0434\u044c (\u043c\u00b2)',\n      '\u0427\u0435\u0445\u043e\u043b (\u0442\u043a\u0430\u043d\u0438)',\n      '\u0424\u0443\u0440\u043d\u0438\u0442\u0443\u0440\u0430 / \u041e\u043f\u0446\u0438\u0438',\n      '\u0421\u0435\u0431\u0435\u0441\u0442\u043e\u0438\u043c\u043e\u0441\u0442\u044c \u043c\u0430\u0442\u0435\u0440. (\u0440\u0443\u0431)',\n      '\u0420\u0430\u0431\u043e\u0442\u0430 (\u0440\u0443\u0431)',\n      '\u0418\u0442\u043e\u0433\u043e \u0441\u0435\u0431\u0435\u0441\u0442\u043e\u0438\u043c\u043e\u0441\u0442\u044c (\u0440\u0443\u0431)',\n      '\u041e\u043f\u0442\u043e\u0432\u0430\u044f \u0446\u0435\u043d\u0430 (\u0440\u0443\u0431)',\n      '\u0420\u0435\u043a\u043e\u043c. \u0440\u043e\u0437\u043d\u0438\u0446\u0430 (\u0440\u0443\u0431)',\n      '\u041f\u0440\u0438\u0431\u044b\u043b\u044c \u0440\u043e\u0437\u043d\u0438\u0446\u044b (\u0440\u0443\u0431)',\n      '\u0412\u0435\u0441 (\u043a\u0433)',\n      '\u0410\u0432\u0442\u043e\u0440 / \u0423\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u043e',\n      '\u0414\u0435\u0442\u0430\u043b\u0438 \u043a\u0440\u043e\u044f'\n    ];\n    sheet.appendRow(headers);\n\n    var headerRange = sheet.getRange(1, 1, 1, headers.length);\n    headerRange.setBackground('#0f172a');\n    headerRange.setFontColor('#f8fafc');\n    headerRange.setFontWeight('bold');\n    headerRange.setHorizontalAlignment('center');\n    sheet.setFrozenRows(1);\n\n    var widths = [110, 140, 200, 120, 100, 70, 100, 160, 160, 130, 100, 140, 130, 130, 130, 80, 130, 220];\n    for (var i = 0; i < widths.length; i++) {\n      sheet.setColumnWidth(i + 1, widths[i]);\n    }\n  }\n  return sheet;\n}\n\n// \u041b\u0438\u0441\u0442 2: \u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0438\nfunction getOrCreateUsersSheet(ss) {\n  var sheet = ss.getSheetByName(SHEET_USERS);\n  if (!sheet) {\n    sheet = ss.insertSheet(SHEET_USERS);\n    var headers = [\n      'ID',\n      '\u041b\u043e\u0433\u0438\u043d',\n      '\u041f\u0430\u0440\u043e\u043b\u044c (\u043e\u0442\u043a\u0440\u044b\u0442\u044b\u0439 / \u0434\u043b\u044f \u0437\u0430\u043c\u0435\u0442\u043e\u043a)',\n      '\u0425\u044d\u0448 \u043f\u0430\u0440\u043e\u043b\u044f (SHA-256)',\n      '\u0420\u043e\u043b\u044c',\n      '\u0424\u0418\u041e / \u0418\u043c\u044f \u0441\u043e\u0442\u0440\u0443\u0434\u043d\u0438\u043a\u0430',\n      '\u0421\u0442\u0430\u0442\u0443\u0441',\n      '\u0414\u0430\u0442\u0430 \u0441\u043e\u0437\u0434\u0430\u043d\u0438\u044f',\n      '\u041f\u043e\u0441\u043b\u0435\u0434\u043d\u0438\u0439 \u0432\u0445\u043e\u0434'\n    ];\n    sheet.appendRow(headers);\n\n    var headerRange = sheet.getRange(1, 1, 1, headers.length);\n    headerRange.setBackground('#1e293b');\n    headerRange.setFontColor('#f8fafc');\n    headerRange.setFontWeight('bold');\n    headerRange.setHorizontalAlignment('center');\n    sheet.setFrozenRows(1);\n\n    sheet.appendRow([\n      'USR-001',\n      'admin',\n      'UnityProxy',\n      '75ad31cc31193c26bff6c1b871819fb5004ef13f0c6e94a3ae8e76743641d2db',\n      '\u0410\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440',\n      '\u0413\u043b\u0430\u0432\u043d\u044b\u0439 \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440',\n      '\u0410\u043a\u0442\u0438\u0432\u0435\u043d',\n      new Date().toLocaleString(\"ru-RU\"),\n      ''\n    ]);\n\n    sheet.appendRow([\n      'USR-002',\n      'user',\n      'blstcs2026',\n      'b7b260d7fe03c0e686972dc206d1270d8330e5fb38b960710bd3e40c3dfba561',\n      '\u0421\u043e\u0442\u0440\u0443\u0434\u043d\u0438\u043a',\n      '\u041c\u0435\u043d\u0435\u0434\u0436\u0435\u0440 \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432',\n      '\u0410\u043a\u0442\u0438\u0432\u0435\u043d',\n      new Date().toLocaleString(\"ru-RU\"),\n      ''\n    ]);\n  }\n  return sheet;\n}\n\n// \u041b\u0438\u0441\u0442 3: \u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438\nfunction getOrCreateSettingsSheet(ss) {\n  var sheet = ss.getSheetByName(SHEET_SETTINGS);\n  if (!sheet) {\n    sheet = ss.insertSheet(SHEET_SETTINGS);\n    var headers = [\n      '\u041a\u0430\u0442\u0435\u0433\u043e\u0440\u0438\u044f',\n      '\u041f\u0430\u0440\u0430\u043c\u0435\u0442\u0440 / \u041a\u043e\u0434',\n      '\u041d\u0430\u0438\u043c\u0435\u043d\u043e\u0432\u0430\u043d\u0438\u0435',\n      '\u0417\u043d\u0430\u0447\u0435\u043d\u0438\u0435 / \u0426\u0435\u043d\u0430 (\u0440\u0443\u0431)',\n      '\u0415\u0434. \u0438\u0437\u043c.',\n      '\u0414\u043e\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0435 \u043f\u0430\u0440\u0430\u043c\u0435\u0442\u0440\u044b (\u0431\u0440\u0430\u043a %, \u043d\u0430\u0446\u0435\u043d\u043a\u0438, \u0441\u043b\u043e\u0438)'\n    ];\n    sheet.appendRow(headers);\n\n    var headerRange = sheet.getRange(1, 1, 1, headers.length);\n    headerRange.setBackground('#1e293b');\n    headerRange.setFontColor('#f8fafc');\n    headerRange.setFontWeight('bold');\n    headerRange.setHorizontalAlignment('center');\n    sheet.setFrozenRows(1);\n  }\n  return sheet;\n}\n";
 
                 
     async function sha256(message) {
@@ -4562,7 +4843,13 @@ ${aramidLines}
           layers: r.layers || 0,
           single_area: r.single_area || (r.parts ? r.parts.reduce((acc, p) => acc + (p.length_cm * p.width_cm * p.quantity)/10000, 0) : 0),
           cover_summary: (r.cover_material || "") + (r.extra_covers && r.extra_covers.length ? ' + ' + r.extra_covers.map(e => e.fabric_name || e.name || e.material || "").join(', ') : ''),
-          accessories_summary: (r.accessories && r.accessories.length) ? r.accessories.map(a => `${a.name} (${a.qty} ${a.unit})`).join(', ') : (r.accessories_summary || ''),
+          accessories_summary: (() => {
+            const parts = [];
+            if (r.accessories && r.accessories.length) parts.push(r.accessories.map(a => `${a.name} (${a.qty} ${a.unit})`).join(', '));
+            else if (r.accessories_summary) parts.push(r.accessories_summary);
+            if (r.expenses && r.expenses.length) parts.push('Доп: ' + r.expenses.map(e => `${e.name} (${e.qty} ${e.unit || 'руб'} × ${e.price} ₽)`).join(', '));
+            return parts.join(' | ');
+          })(),
           material_cost: r.material_cost || 0,
           work_cost: r.work_cost || 0,
           total_cost: r.total_cost || 0,
@@ -4678,6 +4965,9 @@ ${aramidLines}
               }
               if (Array.isArray(remoteSettings.stickers) && remoteSettings.stickers.length > 0) {
                 appSettings.stickers = remoteSettings.stickers;
+              }
+              if (Array.isArray(remoteSettings.expenses) && remoteSettings.expenses.length > 0) {
+                appSettings.expenses = remoteSettings.expenses;
               }
               localStorage.setItem("ballistics_settings", JSON.stringify(appSettings));
               renderSettingsForm();

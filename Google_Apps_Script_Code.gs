@@ -285,7 +285,8 @@ function readSettingsFromSheet(sheet) {
     allowed_layers: [],
     covers: [],
     accessories: [],
-    stickers: []
+    stickers: [],
+    expenses: []
   };
 
   for (var i = 1; i < data.length; i++) {
@@ -330,6 +331,8 @@ function readSettingsFromSheet(sheet) {
       s.accessories.push({ code: code, name: name, unit: unit || 'шт', price: val });
     } else if (cat === 'Наклейки') {
       s.stickers.push({ code: code, name: name, price: val });
+    } else if (cat === 'Дополнительные расходы') {
+      s.expenses.push({ code: code, name: name, unit: unit || 'руб', price: val });
     }
   }
 
@@ -399,6 +402,11 @@ function writeSettingsToSheet(sheet, settings) {
   // 5. Наклейки
   (settings.stickers || []).forEach(function(s) {
     rows.push(['Наклейки', s.code, s.name, s.price, 'шт', '']);
+  });
+
+  // 6. Дополнительные расходы (аренда, сотрудники, накладные)
+  (settings.expenses || []).forEach(function(e) {
+    rows.push(['Дополнительные расходы', e.code || e.name, e.name, e.price, e.unit || 'руб', '']);
   });
 
   if (rows.length > 0) {
