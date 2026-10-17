@@ -1,5 +1,5 @@
 /**
- * BLSTCS.RU - Google Apps Script для синхронизации расчетов баллистики, базы пользователей и настроек (v3.6)
+ * BLSTCS.RU - Google Apps Script для синхронизации расчетов баллистики, базы пользователей и настроек (v3.7)
  * Таблица: "Расчет баллистики" (https://docs.google.com/spreadsheets/d/1QsGYXKAYsQOCguMVwBq-BhCaeRhzL33YVekkr49RYM8/edit)
  * Веб-приложение: https://script.google.com/macros/s/AKfycbxGn3R0uG1EJdR3lWs_zJrjhxk_v4SDr_sGdHiOGk-6Q5jJM5M8gEa0FFejOobHnQAN/exec
  * 
@@ -28,7 +28,7 @@ function doGet(e) {
       var setSheet = getOrCreateSettingsSheet(ss);
       return jsonResponse({
         status: 'ok',
-        message: 'BLSTCS Google Sheets API v3.6 подключено успешно!',
+        message: 'BLSTCS Google Sheets API v3.7 подключено успешно!',
         spreadsheet: ss.getName(),
         history_rows: Math.max(0, histSheet.getLastRow() - 1),
         users_count: Math.max(0, userSheet.getLastRow() - 1),
@@ -111,6 +111,23 @@ function doGet(e) {
         });
       }
       return jsonResponse({ status: 'ok', count: users.length, users: users }, p.callback);
+    }
+
+    // 6. Сохранение персонального стиля пользователя (Save User Style via GET / JSONP)
+    if (action === 'save_user_style') {
+      var resStyle = saveUserStyleToSheet(ss, p.login, {
+        mode: p.mode || p.theme_mode || 'dark',
+        bg_color: p.bg_color || '',
+        card_color: p.card_color || '',
+        updated_at: new Date().toLocaleString("ru-RU")
+      });
+      return jsonResponse(resStyle, p.callback);
+    }
+
+    // 7. Получение персонального стиля пользователя (Get User Style)
+    if (action === 'get_user_style') {
+      var userStyle = getUserStyleFromSheet(ss, p.login);
+      return jsonResponse({ status: 'ok', login: p.login, style: userStyle }, p.callback);
     }
 
     return jsonResponse({ status: 'ok', message: 'BLSTCS API active' }, p.callback);
@@ -247,6 +264,17 @@ function doPost(e) {
         ]);
         return jsonResponse({ status: 'ok', message: 'Пользователь ' + targetLogin + ' создан', id: newId });
       }
+    }
+
+    // 5. Сохранение персонального стиля пользователя (POST)
+    if (action === 'save_user_style') {
+      var resStylePost = saveUserStyleToSheet(ss, payload.login, payload.style || {
+        mode: payload.mode || payload.theme_mode || 'dark',
+        bg_color: payload.bg_color || '',
+        card_color: payload.card_color || '',
+        updated_at: new Date().toLocaleString("ru-RU")
+      });
+      return jsonResponse(resStylePost);
     }
 
     return jsonResponse({ status: 'error', message: 'Неизвестное действие: ' + action });
@@ -479,12 +507,14 @@ function verifyUserInSheet(userSheet, inputLogin, inputPass, inputHash) {
         }
         var role = (row[colRole] || 'Сотрудник').toString().trim();
         var name = (row[colName] || row[colLogin] || cleanLogin).toString().trim();
+        var userStyle = getUserStyleFromSheet(userSheet.getParent(), row[colLogin]);
         return {
           status: 'ok',
           login: row[colLogin],
           role: role,
           is_admin: (role.toLowerCase().indexOf('админ') !== -1 || role.toLowerCase() === 'admin'),
-          name: name
+          name: name,
+          style: userStyle
         };
       } else {
         return { status: 'wrong_password', message: 'Неверный пароль' };
@@ -493,6 +523,82 @@ function verifyUserInSheet(userSheet, inputLogin, inputPass, inputHash) {
   }
 
   return { status: 'not_found', message: 'Пользователь не найден' };
+}
+
+// Сохранение персонального стиля пользователя в листе "Пользователи"
+function saveUserStyleToSheet(ss, login, styleData) {
+  if (!login) return { status: 'error', message: 'Логин не указан' };
+  var cleanLogin = login.toString().trim().toLowerCase();
+  var userSheet = getOrCreateUsersSheet(ss);
+  var data = userSheet.getDataRange().getValues();
+
+  var headers = data[0];
+  var colStyle = -1;
+  for (var i = 0; i < headers.length; i++) {
+    var h = (headers[i] || '').toString().toLowerCase();
+    if (h.indexOf('оформлен') !== -1 || h.indexOf('стиль') !== -1 || h.indexOf('цвета') !== -1) {
+      colStyle = i;
+      break;
+    }
+  }
+
+  if (colStyle === -1) {
+    colStyle = headers.length;
+    userSheet.getRange(1, colStyle + 1).setValue('Оформление (цвета и тема)');
+    userSheet.getRange(1, colStyle + 1).setBackground('#1e293b').setFontColor('#f8fafc').setFontWeight('bold');
+  }
+
+  var foundRow = -1;
+  for (var r = 1; r < data.length; r++) {
+    if ((data[r][1] || '').toString().trim().toLowerCase() === cleanLogin) {
+      foundRow = r + 1;
+      break;
+    }
+  }
+
+  var styleStr = typeof styleData === 'string' ? styleData : JSON.stringify(styleData);
+  if (foundRow !== -1) {
+    userSheet.getRange(foundRow, colStyle + 1).setValue(styleStr);
+  } else {
+    var newId = 'USR-' + (data.length < 10 ? '00' : (data.length < 100 ? '0' : '')) + data.length;
+    var newRow = [newId, login, '', '', 'Сотрудник', login, 'Активен', new Date().toLocaleString("ru-RU"), ''];
+    while (newRow.length < colStyle) newRow.push('');
+    newRow[colStyle] = styleStr;
+    userSheet.appendRow(newRow);
+  }
+
+  return { status: 'ok', message: 'Оформление пользователя ' + login + ' сохранено в Google Таблицу', login: login, style: styleData };
+}
+
+// Получение персонального стиля пользователя из листа "Пользователи"
+function getUserStyleFromSheet(ss, login) {
+  if (!login) return null;
+  var cleanLogin = login.toString().trim().toLowerCase();
+  var userSheet = getOrCreateUsersSheet(ss);
+  var data = userSheet.getDataRange().getValues();
+  if (data.length <= 1) return null;
+
+  var headers = data[0];
+  var colStyle = -1;
+  for (var i = 0; i < headers.length; i++) {
+    var h = (headers[i] || '').toString().toLowerCase();
+    if (h.indexOf('оформлен') !== -1 || h.indexOf('стиль') !== -1 || h.indexOf('цвета') !== -1) {
+      colStyle = i;
+      break;
+    }
+  }
+  if (colStyle === -1) return null;
+
+  for (var r = 1; r < data.length; r++) {
+    if ((data[r][1] || '').toString().trim().toLowerCase() === cleanLogin) {
+      var val = (data[r][colStyle] || '').toString().trim();
+      if (val && val.startsWith('{')) {
+        try { return JSON.parse(val); } catch(e) {}
+      }
+      break;
+    }
+  }
+  return null;
 }
 
 function jsonResponse(obj, callback) {
@@ -561,7 +667,8 @@ function getOrCreateUsersSheet(ss) {
       'ФИО / Имя сотрудника',
       'Статус',
       'Дата создания',
-      'Последний вход'
+      'Последний вход',
+      'Оформление (цвета и тема)'
     ];
     sheet.appendRow(headers);
 
