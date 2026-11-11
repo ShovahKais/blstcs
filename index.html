@@ -231,8 +231,14 @@
         </button>
       </nav>
 
-      <!-- Base Theme Toggle (Dark / Light) & User Color Customizer -->
+      <!-- Wizard Launcher & Theme / Color Controls -->
       <div class="flex items-center gap-1.5 sm:gap-2">
+        <!-- Wizard Launcher Button -->
+        <button id="btn-open-wizard" type="button" onclick="openWizardModal()" title="Поэтапный мастер расчета баллистики" class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-theme/40 bg-theme/10 hover:bg-theme/20 text-theme font-semibold transition text-xs shadow-sm cursor-pointer ring-1 ring-theme/30 hover:ring-theme">
+          <i class="fa-solid fa-wand-magic-sparkles text-theme animate-pulse"></i>
+          <span class="hidden sm:inline">Мастер расчёта</span>
+        </button>
+
         <!-- Toggle Dark / Light -->
         <button id="theme-toggle-btn" type="button" onclick="toggleBaseTheme()" title="Переключить тему (Светлая / Тёмная)" class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-card bg-card text-main hover:border-theme transition text-xs font-semibold shadow-sm cursor-pointer">
           <i id="theme-toggle-icon" class="fa-solid fa-moon text-theme text-sm"></i>
@@ -259,6 +265,27 @@
 
     <!-- ================= TAB 1: BALLISTICS CALCULATOR ================= -->
     <div id="tab-calculator" class="tab-content">
+      
+      <!-- Wizard Quick Access Banner -->
+      <div class="bg-gradient-to-r from-theme/15 via-theme-light/20 to-transparent p-3 sm:p-4 rounded-2xl border border-theme/30 mb-5 flex flex-wrap items-center justify-between gap-3 shadow-sm hover:border-theme transition">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-theme/20 border border-theme/30 flex items-center justify-center text-theme text-base shadow-inner">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+          </div>
+          <div>
+            <div class="text-xs sm:text-sm font-bold text-main flex items-center gap-1.5">
+              Поэтапный мастер расчёта баллистики
+              <span class="text-[10px] px-1.5 py-0.2 rounded font-bold bg-theme text-white">Новый режим</span>
+            </div>
+            <p class="text-[11px] text-muted">Пошаговый расчет с подсказками в отдельном окне без изменения текущей формы калькулятора</p>
+          </div>
+        </div>
+        <button type="button" onclick="openWizardModal()" class="px-3.5 py-1.5 sm:py-2 rounded-xl bg-theme hover:opacity-90 text-white text-xs font-semibold shadow-md transition flex items-center gap-1.5 cursor-pointer">
+          <i class="fa-solid fa-play text-[10px]"></i>
+          <span>Запустить мастер</span>
+        </button>
+      </div>
+
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         <!-- Left: Form Input (7 cols) -->
@@ -1581,6 +1608,74 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- ================= STEP-BY-STEP CALCULATION WIZARD MODAL ================= -->
+  <div id="wizard-modal" class="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md hidden transition-all duration-300">
+    <div class="bg-card text-main border border-card rounded-2xl shadow-2xl w-full max-w-4xl max-h-[94vh] flex flex-col overflow-hidden transition-all">
+      
+      <!-- Wizard Header -->
+      <div class="p-4 sm:p-5 border-b border-card bg-card flex-shrink-0">
+        <div class="flex items-center justify-between gap-3 mb-2.5">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-theme/20 border border-theme/40 flex items-center justify-center text-theme shadow-inner">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="text-sm sm:text-base font-bold text-main">Мастер поэтапного расчета</h3>
+                <span id="wizard-step-badge" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-theme-light text-theme-dark border border-theme/30">Шаг 1 из 7</span>
+              </div>
+              <p id="wizard-step-subtitle" class="text-xs text-muted">Параметры изделия и выбор шаблона</p>
+            </div>
+          </div>
+          <button type="button" onclick="closeWizardModal()" class="p-2 text-muted hover:text-main rounded-xl hover:bg-theme-light/20 transition cursor-pointer" title="Закрыть мастер">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="w-full bg-theme-light/20 h-1.5 rounded-full overflow-hidden mb-3">
+          <div id="wizard-progress-bar" class="bg-gradient-to-r from-theme to-emerald-400 h-full transition-all duration-300" style="width: 14%;"></div>
+        </div>
+
+        <!-- Step Breadcrumbs Navigation -->
+        <div class="flex items-center gap-1 sm:gap-1.5 overflow-x-auto pb-1 text-[11px] font-medium text-muted scrollbar-none" id="wizard-nav-chips">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- Wizard Scrollable Body -->
+      <div id="wizard-step-container" class="overflow-y-auto p-4 sm:p-6 flex-1 space-y-4">
+        <!-- Rendered dynamically by renderWizard() -->
+      </div>
+
+      <!-- Wizard Footer / Navigation Controls -->
+      <div class="p-3.5 sm:p-4 border-t border-card bg-card/90 flex items-center justify-between gap-2 flex-shrink-0">
+        <div>
+          <button type="button" id="wizard-btn-prev" onclick="wizardPrev()" class="px-3.5 sm:px-4 py-2 rounded-xl border border-card bg-card hover:border-theme text-main text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>Назад</span>
+          </button>
+        </div>
+
+        <!-- Intermediate Summary Quick Pill -->
+        <div id="wizard-footer-summary" class="hidden sm:flex items-center gap-2 text-xs text-muted font-mono bg-theme-light/10 px-3 py-1.5 rounded-xl border border-card">
+          <!-- Dynamic info like: 0.0500 м² | 1 деталь -->
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="closeWizardModal()" class="px-3 py-2 rounded-xl text-muted hover:text-main text-xs font-medium transition cursor-pointer">
+            Закрыть
+          </button>
+          <button type="button" id="wizard-btn-next" onclick="wizardNext()" class="px-4 sm:px-5 py-2 rounded-xl bg-theme bg-theme-hover text-white text-xs font-semibold shadow-md transition flex items-center gap-1.5 cursor-pointer">
+            <span id="wizard-btn-next-text">Далее</span>
+            <i id="wizard-btn-next-icon" class="fa-solid fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -4737,6 +4832,1343 @@ ${aramidLines}
         hash |= 0;
       }
       return "fb_" + Math.abs(hash);
+    }
+
+
+    // ================= STEP-BY-STEP CALCULATION WIZARD MODULE =================
+    const WIZARD_STEPS = [
+      { num: 1, title: "Изделие", subtitle: "Параметры изделия и выбор шаблона", icon: "fa-layer-group" },
+      { num: 2, title: "Детали кроя", subtitle: "Габариты, количество и периметр", icon: "fa-shapes" },
+      { num: 3, title: "Баллистика", subtitle: "Материал пакета и число слоёв", icon: "fa-shield-halved" },
+      { num: 4, title: "Чехол и защита", subtitle: "Основной чехол, ПЭТ и доп. ткани", icon: "fa-vest" },
+      { num: 5, title: "Фурнитура и допы", subtitle: "Маркировка, фурнитура и расходы", icon: "fa-paperclip" },
+      { num: 6, title: "Сложность и наценка", subtitle: "Сложность лекал и коэффициент наценки", icon: "fa-drafting-compass" },
+      { num: 7, title: "Результат", subtitle: "Интерактивный итог и действия", icon: "fa-chart-pie" }
+    ];
+
+    let wizardState = {
+      step: 1,
+      maxStepReached: 1,
+      product_name: "Баллистический пакет",
+      product_code: "",
+      template_id: "",
+      material: "СВМПэ",
+      layers: 25,
+      parts: [{ part_number: 1, length_cm: 20, width_cm: 20, perimeter_mm: 800, quantity: 1 }],
+      cover_material: "Ткань для УЗ",
+      cover_two_sided: true,
+      include_pet: false,
+      include_aramid_paper: false,
+      include_aramid_edging: false,
+      extra_covers: [],
+      accessories: [],
+      expenses: [],
+      sticker_code: "",
+      sticker_qty: 0,
+      complexity_markup_pct: 0,
+      work_price_per_part: "",
+      custom_markup: ""
+    };
+
+    function openWizardModal(mode = 'default') {
+      if (mode === 'from_calc') {
+        importFromMainCalculatorToWizard();
+      } else if (!wizardState.parts || wizardState.parts.length === 0) {
+        wizardState.parts = [{ part_number: 1, length_cm: 20, width_cm: 20, perimeter_mm: 800, quantity: 1 }];
+      }
+      wizardState.step = 1;
+      const modal = document.getElementById("wizard-modal");
+      if (modal) {
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+      }
+      renderWizard();
+    }
+
+    function closeWizardModal() {
+      const modal = document.getElementById("wizard-modal");
+      if (modal) {
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+      }
+    }
+
+    function importFromMainCalculatorToWizard() {
+      wizardState.product_name = document.getElementById("product_name") ? document.getElementById("product_name").value.trim() : "Баллистический пакет";
+      wizardState.product_code = document.getElementById("product_code") ? document.getElementById("product_code").value.trim() : "";
+      wizardState.material = document.getElementById("material") ? document.getElementById("material").value : "СВМПэ";
+      wizardState.layers = parseInt(document.getElementById("layers") ? document.getElementById("layers").value : 25) || 25;
+      wizardState.parts = JSON.parse(JSON.stringify(parts && parts.length > 0 ? parts : [{ part_number: 1, length_cm: 20, width_cm: 20, perimeter_mm: 800, quantity: 1 }]));
+      wizardState.cover_material = document.getElementById("cover_material") ? document.getElementById("cover_material").value : "Ткань для УЗ";
+      wizardState.cover_two_sided = document.getElementById("cover_two_sided") ? document.getElementById("cover_two_sided").checked : true;
+      wizardState.include_pet = document.getElementById("include_pet") ? document.getElementById("include_pet").checked : false;
+      wizardState.include_aramid_paper = document.getElementById("include_aramid_paper") ? document.getElementById("include_aramid_paper").checked : false;
+      wizardState.include_aramid_edging = document.getElementById("include_aramid_edging") ? document.getElementById("include_aramid_edging").checked : false;
+      wizardState.extra_covers = JSON.parse(JSON.stringify(extraCovers || []));
+      wizardState.accessories = JSON.parse(JSON.stringify(accessories || []));
+      wizardState.expenses = JSON.parse(JSON.stringify(expenses || []));
+      wizardState.sticker_code = document.getElementById("sticker_code") ? document.getElementById("sticker_code").value : "";
+      wizardState.sticker_qty = parseInt(document.getElementById("sticker_qty") ? document.getElementById("sticker_qty").value : 0) || 0;
+      wizardState.complexity_markup_pct = selectedComplexityMarkup || 0;
+      wizardState.work_price_per_part = document.getElementById("work_price_per_part") ? document.getElementById("work_price_per_part").value : "";
+      wizardState.custom_markup = document.getElementById("custom_markup") ? document.getElementById("custom_markup").value : "";
+      wizardState.maxStepReached = 7;
+      showToast("Данные скопированы из основного калькулятора!");
+    }
+
+    function setWizardStep(num) {
+      if (num < 1 || num > 7) return;
+      if (num > wizardState.step) {
+        if (!validateWizardStep(wizardState.step)) return;
+      }
+      wizardState.step = num;
+      if (num > wizardState.maxStepReached) {
+        wizardState.maxStepReached = num;
+      }
+      renderWizard();
+    }
+
+    function validateWizardStep(currentStep) {
+      if (currentStep === 2) {
+        if (!wizardState.parts || wizardState.parts.length === 0) {
+          showToast("Добавьте хотя бы одну деталь кроя", true);
+          return false;
+        }
+        for (let i = 0; i < wizardState.parts.length; i++) {
+          const p = wizardState.parts[i];
+          if ((parseFloat(p.length_cm) || 0) <= 0 || (parseFloat(p.width_cm) || 0) <= 0 || (parseInt(p.quantity) || 0) <= 0) {
+            showToast(`Укажите корректные размеры для детали #${i + 1}`, true);
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    function wizardNext() {
+      if (wizardState.step < 7) {
+        if (!validateWizardStep(wizardState.step)) return;
+        setWizardStep(wizardState.step + 1);
+      } else {
+        closeWizardModal();
+      }
+    }
+
+    function wizardPrev() {
+      if (wizardState.step > 1) {
+        setWizardStep(wizardState.step - 1);
+      }
+    }
+
+    function resetWizard() {
+      wizardState = {
+        step: 1,
+        maxStepReached: 1,
+        product_name: "Баллистический пакет",
+        product_code: "",
+        template_id: "",
+        material: "СВМПэ",
+        layers: 25,
+        parts: [{ part_number: 1, length_cm: 20, width_cm: 20, perimeter_mm: 800, quantity: 1 }],
+        cover_material: "Ткань для УЗ",
+        cover_two_sided: true,
+        include_pet: false,
+        include_aramid_paper: false,
+        include_aramid_edging: false,
+        extra_covers: [],
+        accessories: [],
+        expenses: [],
+        sticker_code: "",
+        sticker_qty: 0,
+        complexity_markup_pct: 0,
+        work_price_per_part: "",
+        custom_markup: ""
+      };
+      renderWizard();
+      showToast("Мастер сброшен к начальным параметрам");
+    }
+
+    function calculateWizardTotals() {
+      let totalSingleAreaCm2 = 0;
+      let totalPerimeterMm = 0;
+      let totalPartsCount = 0;
+
+      (wizardState.parts || []).forEach(p => {
+        const q = parseInt(p.quantity) || 0;
+        if (q > 0) {
+          const l = parseFloat(p.length_cm) || 0;
+          const w = parseFloat(p.width_cm) || 0;
+          const per = parseFloat(p.perimeter_mm) || (2 * (l * 10 + w * 10));
+          totalSingleAreaCm2 += (l * w * q);
+          totalPerimeterMm += (per * q);
+          totalPartsCount += q;
+        }
+      });
+
+      const totalSingleAreaM2 = totalSingleAreaCm2 / 10000;
+      const totalPerimeterM = totalPerimeterMm / 1000;
+      const layers = parseInt(wizardState.layers) || 25;
+      const calculatedMaterialAreaM2 = totalSingleAreaM2 * layers;
+
+      const matName = wizardState.material || "СВМПэ";
+      const isAramid = matName.toLowerCase().includes("арамид");
+      const mats = (appSettings.materials && appSettings.materials.length > 0) ? appSettings.materials : DEFAULT_SETTINGS.materials;
+      const matSetting = mats.find(m => m.name.toLowerCase() === matName.toLowerCase()) || { price_per_m2: (isAramid ? 1530.0 : 456.25) };
+      const ballisticCost = calculatedMaterialAreaM2 * (parseFloat(matSetting.price_per_m2) || 456.25);
+
+      let petCost = 0;
+      if (wizardState.include_pet && totalSingleAreaM2 > 0) {
+        petCost = totalSingleAreaM2 * (appSettings.general && appSettings.general.pet_price_per_m2 ? appSettings.general.pet_price_per_m2 : 389.76);
+      }
+
+      let primaryCoverCost = 0;
+      const coverName = wizardState.cover_material;
+      const coverTwoSided = wizardState.cover_two_sided;
+      if (coverName && totalSingleAreaM2 > 0) {
+        const covers = (appSettings.covers && appSettings.covers.length > 0) ? appSettings.covers : DEFAULT_SETTINGS.covers;
+        const cSetting = covers.find(c => c.name.toLowerCase() === coverName.toLowerCase()) || { price_per_m2: 510, area_markup_pct: 5, defect_markup_pct: 2 };
+        const areaMult = 1.0 + ((cSetting.area_markup_pct !== undefined ? cSetting.area_markup_pct : 5.0) / 100.0);
+        const defectMult = 1.0 + ((cSetting.defect_markup_pct !== undefined ? cSetting.defect_markup_pct : 2.0) / 100.0);
+        const sideMult = coverTwoSided ? 2.0 : 1.0;
+        primaryCoverCost = totalSingleAreaM2 * areaMult * defectMult * (parseFloat(cSetting.price_per_m2) || 510) * sideMult;
+      }
+
+      let extraCoversCost = 0;
+      (wizardState.extra_covers || []).forEach(ec => {
+        const areaMarkup = 1.0 + ((ec.area_markup_pct !== undefined ? ec.area_markup_pct : 5.0) / 100.0);
+        const defMarkup = 1.0 + ((ec.defect_markup_pct !== undefined ? ec.defect_markup_pct : 2.0) / 100.0);
+        const mult = parseFloat(ec.area_mult) || 1.0;
+        const price = parseFloat(ec.price_per_m2) || 0;
+        extraCoversCost += totalSingleAreaM2 * mult * areaMarkup * defMarkup * price;
+      });
+
+      let accessoriesCost = 0;
+      (wizardState.accessories || []).forEach(acc => {
+        const q = parseFloat(acc.qty) || 0;
+        const p = parseFloat(acc.price) || 0;
+        accessoriesCost += (q * p);
+      });
+
+      let expensesCost = 0;
+      (wizardState.expenses || []).forEach(exp => {
+        const q = parseFloat(exp.qty) || 0;
+        const p = parseFloat(exp.price) || 0;
+        expensesCost += (q * p);
+      });
+
+      let stickerCost = 0;
+      const stickerCode = wizardState.sticker_code;
+      const stickerQty = parseInt(wizardState.sticker_qty) || 0;
+      if (stickerCode && stickerQty > 0) {
+        const stickers = (appSettings.stickers && appSettings.stickers.length > 0) ? appSettings.stickers : DEFAULT_SETTINGS.stickers;
+        const sSetting = stickers.find(s => s.code.toLowerCase() === stickerCode.toLowerCase());
+        if (sSetting) stickerCost = (parseFloat(sSetting.price) || 0) * stickerQty;
+      }
+
+      let paperCost = 0;
+      let edgingCost = 0;
+      if (isAramid) {
+        if (wizardState.include_aramid_paper) {
+          paperCost = totalSingleAreaM2 * (appSettings.general && appSettings.general.aramid_paper_price_per_m2 ? appSettings.general.aramid_paper_price_per_m2 : 38.46);
+        }
+        if (wizardState.include_aramid_edging) {
+          edgingCost = totalPerimeterM * (appSettings.general && appSettings.general.aramid_edging_price_per_m ? appSettings.general.aramid_edging_price_per_m : 5.0);
+        }
+      }
+
+      const totalCoverCost = primaryCoverCost + extraCoversCost;
+      const materialsCost = ballisticCost + petCost + totalCoverCost + accessoriesCost + stickerCost + paperCost + edgingCost;
+
+      const workRateInput = parseFloat(wizardState.work_price_per_part);
+      const defaultWorkRate = (appSettings.general && appSettings.general.work_price_per_part !== undefined) ? appSettings.general.work_price_per_part : 200.0;
+      const workRate = !isNaN(workRateInput) && workRateInput >= 0 ? workRateInput : defaultWorkRate;
+      const workCost = totalPartsCount * workRate;
+
+      const totalCost = materialsCost + workCost + expensesCost;
+
+      const customMarkupInput = parseFloat(wizardState.custom_markup);
+      const defaultMult = isAramid ? (appSettings.general && appSettings.general.aramid_default_multiplier ? appSettings.general.aramid_default_multiplier : 2.625) : (appSettings.general && appSettings.general.svmp_default_multiplier ? appSettings.general.svmp_default_multiplier : 3.465);
+      const multiplier = (!isNaN(customMarkupInput) && customMarkupInput > 0) ? customMarkupInput : defaultMult;
+
+      const complexityPct = parseInt(wizardState.complexity_markup_pct) || 0;
+      const complexityFactor = 1.0 + (complexityPct / 100.0);
+
+      const baseRawSale = totalCost * multiplier;
+      const baseSalePrice = baseRawSale > 0 ? Math.ceil(Math.round(baseRawSale * 10000) / 10000 / 100) * 100 : 0;
+
+      const rawSale = totalCost * multiplier * complexityFactor;
+      const salePrice = rawSale > 0 ? Math.ceil(Math.round(rawSale * 10000) / 10000 / 100) * 100 : 0;
+      const complexityDiff = Math.max(0, salePrice - baseSalePrice);
+      const profit = Math.max(0, salePrice - totalCost);
+      const marginPct = salePrice > 0 ? ((profit / salePrice) * 100).toFixed(1) : 0;
+
+      return {
+        totalSingleAreaM2,
+        calculatedMaterialAreaM2,
+        totalPerimeterM,
+        totalPartsCount,
+        ballisticCost,
+        petCost,
+        primaryCoverCost,
+        extraCoversCost,
+        totalCoverCost,
+        accessoriesCost,
+        expensesCost,
+        stickerCost,
+        paperCost,
+        edgingCost,
+        materialsCost,
+        workRate,
+        workCost,
+        totalCost,
+        multiplier,
+        complexityPct,
+        complexityFactor,
+        baseSalePrice,
+        complexityDiff,
+        salePrice,
+        profit,
+        marginPct
+      };
+    }
+
+    function renderWizard() {
+      const stepBadge = document.getElementById("wizard-step-badge");
+      const stepSubtitle = document.getElementById("wizard-step-subtitle");
+      const progressBar = document.getElementById("wizard-progress-bar");
+      const navChips = document.getElementById("wizard-nav-chips");
+      const btnPrev = document.getElementById("wizard-btn-prev");
+      const btnNextText = document.getElementById("wizard-btn-next-text");
+      const btnNextIcon = document.getElementById("wizard-btn-next-icon");
+      const footerSummary = document.getElementById("wizard-footer-summary");
+      const stepContainer = document.getElementById("wizard-step-container");
+
+      const curStep = WIZARD_STEPS.find(s => s.num === wizardState.step) || WIZARD_STEPS[0];
+
+      if (stepBadge) stepBadge.innerText = `Шаг ${curStep.num} из 7`;
+      if (stepSubtitle) stepSubtitle.innerText = curStep.subtitle;
+      if (progressBar) progressBar.style.width = `${Math.round((curStep.num / 7) * 100)}%`;
+
+      if (navChips) {
+        navChips.innerHTML = WIZARD_STEPS.map(s => {
+          const isCurrent = (s.num === wizardState.step);
+          const isPassed = (s.num < wizardState.step);
+          const isClickable = (s.num <= wizardState.maxStepReached);
+
+          let cls = "opacity-40 cursor-not-allowed bg-theme-light/10 text-muted";
+          if (isCurrent) {
+            cls = "bg-theme text-white font-bold ring-2 ring-theme shadow-sm";
+          } else if (isPassed) {
+            cls = "bg-theme-light/40 text-theme hover:bg-theme-light cursor-pointer";
+          } else if (isClickable) {
+            cls = "bg-theme-light/20 text-main hover:bg-theme-light/40 cursor-pointer";
+          }
+
+          return `
+            <button type="button" onclick="${isClickable ? `setWizardStep(${s.num})` : ''}" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition whitespace-nowrap ${cls}">
+              <span class="w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${isCurrent ? 'bg-white text-theme-dark' : 'bg-black/20'}">${s.num}</span>
+              <span>${s.title}</span>
+            </button>
+          `;
+        }).join("");
+      }
+
+      if (btnPrev) {
+        if (wizardState.step > 1) btnPrev.classList.remove("hidden");
+        else btnPrev.classList.add("hidden");
+      }
+
+      if (btnNextText) {
+        if (wizardState.step === 6) {
+          btnNextText.innerText = "Рассчитать результат";
+        } else if (wizardState.step === 7) {
+          btnNextText.innerText = "Закрыть мастер";
+        } else {
+          btnNextText.innerText = "Далее";
+        }
+      }
+
+      if (btnNextIcon) {
+        if (wizardState.step === 6) {
+          btnNextIcon.className = "fa-solid fa-calculator";
+        } else if (wizardState.step === 7) {
+          btnNextIcon.className = "fa-solid fa-check";
+        } else {
+          btnNextIcon.className = "fa-solid fa-arrow-right";
+        }
+      }
+
+      if (footerSummary) {
+        let areaCm2 = 0;
+        let count = 0;
+        (wizardState.parts || []).forEach(p => {
+          const q = parseInt(p.quantity) || 0;
+          areaCm2 += (parseFloat(p.length_cm) || 0) * (parseFloat(p.width_cm) || 0) * q;
+          count += q;
+        });
+        const areaM2 = (areaCm2 / 10000).toFixed(4);
+        footerSummary.innerHTML = `
+          <span><i class="fa-solid fa-shapes text-theme"></i> ${count} шт.</span>
+          <span>•</span>
+          <span><i class="fa-solid fa-vector-square text-theme"></i> ${areaM2} м²</span>
+          <span>•</span>
+          <span><i class="fa-solid fa-shield-halved text-theme"></i> ${wizardState.material} (${wizardState.layers} сл.)</span>
+        `;
+      }
+
+      if (!stepContainer) return;
+
+      switch (wizardState.step) {
+        case 1: renderWizardStep1(stepContainer); break;
+        case 2: renderWizardStep2(stepContainer); break;
+        case 3: renderWizardStep3(stepContainer); break;
+        case 4: renderWizardStep4(stepContainer); break;
+        case 5: renderWizardStep5(stepContainer); break;
+        case 6: renderWizardStep6(stepContainer); break;
+        case 7: renderWizardStep7(stepContainer); break;
+      }
+    }
+
+    // --- STEP 1: PRODUCT & TEMPLATES ---
+    function renderWizardStep1(container) {
+      container.innerHTML = `
+        <div class="space-y-4">
+          <div class="bg-theme-light/10 p-3.5 rounded-xl border border-card flex items-start gap-2.5">
+            <i class="fa-solid fa-circle-info text-theme text-sm mt-0.5"></i>
+            <div class="text-xs text-muted leading-relaxed">
+              <strong class="text-main">Шаг 1:</strong> Укажите наименование и код изделия, либо выберите один из типовых шаблонов для быстрого заполнения размеров и слоёв.
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-main mb-2 flex items-center gap-1.5">
+              <i class="fa-solid fa-bookmark text-theme"></i> Быстрый старт по шаблону:
+            </label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button type="button" onclick="selectWizardTemplate('tpl_1')" class="p-3 text-left rounded-xl border border-card hover:border-theme bg-theme-light/5 hover:bg-theme-light/15 transition cursor-pointer flex items-center justify-between">
+                <div>
+                  <div class="text-xs font-bold text-main">Напашник Капля</div>
+                  <div class="text-[11px] text-muted">25×20 см, СВМПэ 25 сл.</div>
+                </div>
+                <span class="text-[11px] px-2 py-0.5 rounded font-mono font-bold bg-theme-light text-theme-dark">909С</span>
+              </button>
+
+              <button type="button" onclick="selectWizardTemplate('tpl_2')" class="p-3 text-left rounded-xl border border-card hover:border-theme bg-theme-light/5 hover:bg-theme-light/15 transition cursor-pointer flex items-center justify-between">
+                <div>
+                  <div class="text-xs font-bold text-main">Защита шеи Воротъ</div>
+                  <div class="text-[11px] text-muted">2 детали: 30×15 и 32×18 см</div>
+                </div>
+                <span class="text-[11px] px-2 py-0.5 rounded font-mono font-bold bg-theme-light text-theme-dark">822</span>
+              </button>
+
+              <button type="button" onclick="selectWizardTemplate('tpl_3')" class="p-3 text-left rounded-xl border border-card hover:border-theme bg-theme-light/5 hover:bg-theme-light/15 transition cursor-pointer flex items-center justify-between">
+                <div>
+                  <div class="text-xs font-bold text-main">Корсет Перко</div>
+                  <div class="text-[11px] text-muted">40×18 см (2 шт), СВМПэ 25 сл.</div>
+                </div>
+                <span class="text-[11px] px-2 py-0.5 rounded font-mono font-bold bg-theme-light text-theme-dark">833-1С</span>
+              </button>
+
+              <button type="button" onclick="importFromMainCalculatorToWizard(); renderWizard();" class="p-3 text-left rounded-xl border border-card hover:border-theme bg-theme-light/5 hover:bg-theme-light/15 transition cursor-pointer flex items-center justify-between">
+                <div>
+                  <div class="text-xs font-bold text-main">Взять из калькулятора</div>
+                  <div class="text-[11px] text-muted">Скопировать текущие детали и чехол</div>
+                </div>
+                <i class="fa-solid fa-cloud-arrow-down text-theme"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="pt-2 border-t border-card grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div>
+              <label class="block text-xs font-semibold text-main mb-1.5">Наименование изделия</label>
+              <input type="text" id="wiz_product_name" value="${wizardState.product_name || ''}" oninput="wizardState.product_name = this.value" placeholder="Например, Напашник Капля" class="input-theme w-full text-sm rounded-xl p-2.5">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-main mb-1.5">Код / Артикул партии</label>
+              <input type="text" id="wiz_product_code" value="${wizardState.product_code || ''}" oninput="wizardState.product_code = this.value" placeholder="Например, 909С" class="input-theme w-full text-sm rounded-xl p-2.5 font-mono">
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function selectWizardTemplate(tplKey) {
+      if (!TEMPLATES[tplKey]) return;
+      const t = TEMPLATES[tplKey];
+      wizardState.product_name = t.name;
+      wizardState.product_code = t.code;
+      wizardState.material = t.material || "СВМПэ";
+      wizardState.layers = t.layers || 25;
+      wizardState.parts = JSON.parse(JSON.stringify(t.parts));
+      wizardState.template_id = tplKey;
+      renderWizard();
+      showToast(`Применен шаблон «${t.name}»`);
+    }
+
+    // --- STEP 2: CUTTING DETAILS (PARTS) ---
+    function renderWizardStep2(container) {
+      let totalAreaCm2 = 0;
+      let totalParts = 0;
+      wizardState.parts.forEach(p => {
+        const q = parseInt(p.quantity) || 0;
+        totalAreaCm2 += (parseFloat(p.length_cm) || 0) * (parseFloat(p.width_cm) || 0) * q;
+        totalParts += q;
+      });
+      const singleAreaM2 = (totalAreaCm2 / 10000).toFixed(4);
+
+      const rowsHtml = wizardState.parts.map((p, idx) => {
+        const pArea = (((parseFloat(p.length_cm) || 0) * (parseFloat(p.width_cm) || 0) * (parseInt(p.quantity) || 0)) / 10000).toFixed(4);
+        return `
+          <tr class="hover:bg-theme-light/10 transition border-b border-card">
+            <td class="py-2.5 px-2 text-muted font-bold">${idx + 1}</td>
+            <td class="py-2 px-1.5">
+              <input type="number" step="0.1" min="1" max="500" value="${p.length_cm}" oninput="updateWizardPart(${idx}, 'length_cm', this.value)" class="input-theme w-full text-xs rounded-lg p-2 font-mono">
+            </td>
+            <td class="py-2 px-1.5">
+              <input type="number" step="0.1" min="1" max="500" value="${p.width_cm}" oninput="updateWizardPart(${idx}, 'width_cm', this.value)" class="input-theme w-full text-xs rounded-lg p-2 font-mono">
+            </td>
+            <td class="py-2 px-1.5">
+              <input type="number" step="10" min="0" value="${p.perimeter_mm}" oninput="updateWizardPart(${idx}, 'perimeter_mm', this.value)" class="input-theme w-full text-xs rounded-lg p-2 font-mono" title="Периметр детали в мм">
+            </td>
+            <td class="py-2 px-1.5">
+              <input type="number" step="1" min="1" max="100" value="${p.quantity}" oninput="updateWizardPart(${idx}, 'quantity', this.value)" class="input-theme w-16 text-xs rounded-lg p-2 font-mono text-center font-bold">
+            </td>
+            <td class="py-2.5 px-2 text-right font-mono text-xs font-semibold text-main whitespace-nowrap">${pArea} м²</td>
+            <td class="py-2.5 px-1 text-center">
+              <button type="button" onclick="removeWizardPart(${idx})" class="p-1 text-rose-400 hover:text-rose-300 transition ${wizardState.parts.length <= 1 ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}" title="Удалить деталь">
+                <i class="fa-solid fa-trash-can text-xs"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+
+      container.innerHTML = `
+        <div class="space-y-4">
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <h4 class="text-xs sm:text-sm font-bold text-main flex items-center gap-1.5">
+                <i class="fa-solid fa-shapes text-theme"></i> Детали кроя баллистического пакета:
+              </h4>
+              <p class="text-[11px] text-muted">Укажите габариты в см (периметр в мм рассчитывается автоматически)</p>
+            </div>
+            <button type="button" onclick="addWizardPart()" class="px-3 py-1.5 rounded-xl bg-theme-light text-theme-dark font-semibold text-xs hover:opacity-85 transition flex items-center gap-1.5 cursor-pointer shadow-sm ${wizardState.parts.length >= 5 ? 'opacity-40 cursor-not-allowed' : ''}">
+              <i class="fa-solid fa-plus text-[10px]"></i>
+              <span>Добавить деталь</span>
+            </button>
+          </div>
+
+          <div class="overflow-x-auto rounded-xl border border-card bg-card">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-theme-light/25 text-muted border-b border-card font-semibold">
+                <tr>
+                  <th class="py-2.5 px-2 w-8">#</th>
+                  <th class="py-2.5 px-2 min-w-[90px]">Длина (см)</th>
+                  <th class="py-2.5 px-2 min-w-[90px]">Ширина (см)</th>
+                  <th class="py-2.5 px-2 min-w-[100px]">Периметр (мм)</th>
+                  <th class="py-2.5 px-2 w-20 text-center">Кол-во</th>
+                  <th class="py-2.5 px-2 text-right">Площадь</th>
+                  <th class="py-2.5 px-1 w-8"></th>
+                </tr>
+              </thead>
+              <tbody class="divide-y border-card">
+                ${rowsHtml}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="p-3 rounded-xl bg-theme-light/10 border border-card flex flex-wrap items-center justify-between gap-2 text-xs">
+            <span class="text-muted">Всего деталей: <strong class="text-main font-mono">${totalParts}</strong> шт.</span>
+            <span class="text-muted">Суммарная площадь (1 слой): <strong class="text-theme font-mono font-bold">${singleAreaM2}</strong> м²</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function updateWizardPart(idx, field, val) {
+      if (!wizardState.parts[idx]) return;
+      const num = parseFloat(val) || 0;
+      wizardState.parts[idx][field] = num;
+
+      // Auto update perimeter when length/width changes if perimeter was standard rectangle
+      if (field === 'length_cm' || field === 'width_cm') {
+        const l = parseFloat(wizardState.parts[idx].length_cm) || 0;
+        const w = parseFloat(wizardState.parts[idx].width_cm) || 0;
+        wizardState.parts[idx].perimeter_mm = Math.round(2 * (l * 10 + w * 10));
+      }
+      renderWizard();
+    }
+
+    function addWizardPart() {
+      if (wizardState.parts.length >= 5) {
+        showToast("Максимально 5 деталей кроя", true);
+        return;
+      }
+      wizardState.parts.push({
+        part_number: wizardState.parts.length + 1,
+        length_cm: 20,
+        width_cm: 20,
+        perimeter_mm: 800,
+        quantity: 1
+      });
+      renderWizard();
+    }
+
+    function removeWizardPart(idx) {
+      if (wizardState.parts.length <= 1) return;
+      wizardState.parts.splice(idx, 1);
+      wizardState.parts.forEach((p, i) => p.part_number = i + 1);
+      renderWizard();
+    }
+
+    // --- STEP 3: BALLISTICS (MATERIAL & LAYERS) ---
+    function renderWizardStep3(container) {
+      const isAramid = wizardState.material.toLowerCase().includes("арамид");
+      const mats = (appSettings.materials && appSettings.materials.length > 0) ? appSettings.materials : DEFAULT_SETTINGS.materials;
+      const svmpMat = mats.find(m => !m.name.toLowerCase().includes("арамид")) || { price_per_m2: 456.25, name: "СВМПэ" };
+      const aramidMat = mats.find(m => m.name.toLowerCase().includes("арамид")) || { price_per_m2: 1530.0, name: "Арамид" };
+
+      let areaCm2 = 0;
+      (wizardState.parts || []).forEach(p => {
+        areaCm2 += (parseFloat(p.length_cm) || 0) * (parseFloat(p.width_cm) || 0) * (parseInt(p.quantity) || 0);
+      });
+      const singleM2 = areaCm2 / 10000;
+      const totalLayersM2 = (singleM2 * (wizardState.layers || 25)).toFixed(4);
+
+      const svmpLayers = getAllowedLayers(svmpMat.name);
+      const aramidLayers = getAllowedLayers(aramidMat.name);
+      const activeLayers = isAramid ? aramidLayers : svmpLayers;
+
+      const layerChips = activeLayers.map(l => {
+        const isSel = (wizardState.layers === l);
+        let desc = "";
+        if (isAramid) {
+          if (l === 18) desc = "Класс «А»";
+          else if (l === 26) desc = "Класс «АУ»";
+          else if (l === 40) desc = "Класс «АСС»";
+        } else {
+          if (l === 20) desc = "Бр1";
+          else if (l === 25) desc = "Класс «С»";
+          else if (l === 30) desc = "Класс «У»";
+          else if (l === 40) desc = "Класс «СС»";
+        }
+
+        return `
+          <button type="button" onclick="setWizardLayers(${l})" class="p-2.5 rounded-xl border text-center transition cursor-pointer ${isSel ? 'ring-2 ring-theme border-theme bg-theme text-white font-bold shadow-md' : 'border-card bg-theme-light/5 hover:border-theme text-main'}">
+            <div class="text-sm font-bold font-mono">${l} сл.</div>
+            ${desc ? `<div class="text-[10px] opacity-80 mt-0.5">${desc}</div>` : ''}
+          </button>
+        `;
+      }).join("");
+
+      container.innerHTML = `
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-main mb-2">1. Выберите тип баллистического материала:</label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <!-- SVMP Card -->
+              <div onclick="setWizardMaterial('${svmpMat.name.replace(/'/g, "\'")}')" class="p-4 rounded-xl border transition cursor-pointer select-none ${!isAramid ? 'ring-2 ring-sky-400 border-sky-500 bg-sky-500/10 shadow-md' : 'border-card bg-card hover:border-theme'}">
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="text-xs font-bold text-sky-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-shield-halved"></i> СВМПэ (Полиэтилен)
+                  </span>
+                  <span class="text-xs font-mono font-bold text-main">${svmpMat.price_per_m2} ₽/м²</span>
+                </div>
+                <p class="text-[11px] text-muted">Высокопрочный полиэтилен сверхвысокой молекулярной массы. Лёгкий, водостойкий, класс Бр1 / С / У / СС.</p>
+              </div>
+
+              <!-- Aramid Card -->
+              <div onclick="setWizardMaterial('${aramidMat.name.replace(/'/g, "\'")}')" class="p-4 rounded-xl border transition cursor-pointer select-none ${isAramid ? 'ring-2 ring-amber-400 border-amber-500 bg-amber-500/10 shadow-md' : 'border-card bg-card hover:border-theme'}">
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-fire-flame-curved"></i> Арамид (Тварон / Кевлар)
+                  </span>
+                  <span class="text-xs font-mono font-bold text-main">${aramidMat.price_per_m2} ₽/м²</span>
+                </div>
+                <p class="text-[11px] text-muted">Термостойкая арамидная ткань высокой плотности. Защита от высокоскоростных осколков и огня, класс А / АУ / АСС.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-2 border-t border-card">
+            <div class="flex items-center justify-between mb-2">
+              <label class="block text-xs font-semibold text-main">2. Количество слоёв пакета:</label>
+              <div class="flex items-center gap-2">
+                <span class="text-[11px] text-muted">Своё число:</span>
+                <input type="number" min="1" max="100" value="${wizardState.layers}" oninput="setWizardLayers(this.value)" class="input-theme w-16 text-xs rounded-lg p-1.5 text-center font-bold font-mono">
+              </div>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              ${layerChips}
+            </div>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-theme-light/10 border border-card flex items-center justify-between text-xs">
+            <span class="text-muted">Расход баллистической ткани:</span>
+            <span class="font-mono font-bold text-theme">${singleM2.toFixed(4)} м² × ${wizardState.layers} сл. = <strong class="text-main">${totalLayersM2} м²</strong></span>
+          </div>
+        </div>
+      `;
+    }
+
+    function setWizardMaterial(mat) {
+      wizardState.material = mat;
+      const isAramid = mat.toLowerCase().includes("арамид");
+      const defaultLayers = isAramid ? 26 : 25;
+      wizardState.layers = defaultLayers;
+      renderWizard();
+    }
+
+    function setWizardLayers(layers) {
+      const l = parseInt(layers) || 25;
+      wizardState.layers = l;
+      renderWizard();
+    }
+
+    // --- STEP 4: COVERS & PROTECTIVE LAYERS ---
+    function renderWizardStep4(container) {
+      const isAramid = wizardState.material.toLowerCase().includes("арамид");
+      const covers = (appSettings.covers && appSettings.covers.length > 0) ? appSettings.covers : DEFAULT_SETTINGS.covers;
+
+      const coverOptions = covers.map(c => `
+        <option value="${c.name}" ${wizardState.cover_material === c.name ? 'selected' : ''}>${c.name} (${c.price_per_m2} ₽/м²)</option>
+      `).join("");
+
+      const extraCoversRows = (wizardState.extra_covers || []).map((ec, idx) => `
+        <div class="flex items-center gap-2 p-2 rounded-xl bg-card border border-card text-xs">
+          <span class="font-bold text-main flex-1 truncate">${ec.fabric_name || ec.name || 'Ткань'}</span>
+          <span class="text-muted font-mono">${ec.area_mult || 1}×</span>
+          <span class="text-muted font-mono">${ec.price_per_m2 || 0} ₽</span>
+          <button type="button" onclick="removeWizardExtraCover(${idx})" class="p-1 text-rose-400 hover:text-rose-300">
+            <i class="fa-solid fa-trash-can text-xs"></i>
+          </button>
+        </div>
+      `).join("");
+
+      container.innerHTML = `
+        <div class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div>
+              <label class="block text-xs font-semibold text-main mb-1.5">Основной материал чехла</label>
+              <select onchange="wizardState.cover_material = this.value; renderWizard();" class="input-theme w-full text-xs rounded-xl p-2.5 font-medium">
+                ${coverOptions}
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-main mb-1.5">Конструкция чехла</label>
+              <div class="grid grid-cols-2 gap-2">
+                <button type="button" onclick="wizardState.cover_two_sided = false; renderWizard();" class="py-2.5 px-3 rounded-xl border text-xs font-semibold transition cursor-pointer ${!wizardState.cover_two_sided ? 'ring-2 ring-theme border-theme bg-theme text-white' : 'border-card bg-theme-light/5 text-muted hover:text-main'}">
+                  1 сторона
+                </button>
+                <button type="button" onclick="wizardState.cover_two_sided = true; renderWizard();" class="py-2.5 px-3 rounded-xl border text-xs font-semibold transition cursor-pointer ${wizardState.cover_two_sided ? 'ring-2 ring-theme border-theme bg-theme text-white' : 'border-card bg-theme-light/5 text-muted hover:text-main'}">
+                  2 стороны (полный)
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-2 border-t border-card space-y-2.5">
+            <label class="block text-xs font-semibold text-main mb-1">Защитные опции пакета:</label>
+            
+            <label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-card bg-theme-light/5 hover:border-theme transition cursor-pointer">
+              <input type="checkbox" ${wizardState.include_pet ? 'checked' : ''} onchange="wizardState.include_pet = this.checked; renderWizard();" class="rounded h-4 w-4 accent-theme">
+              <div class="text-xs">
+                <span class="font-bold text-main">Подпорка ПЭТ</span>
+                <span class="text-muted ml-1.5">(листовой полиэтилентерефталат для сохранения формы пакета, ~389.76 ₽/м²)</span>
+              </div>
+            </label>
+
+            ${isAramid ? `
+              <label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-card bg-theme-light/5 hover:border-theme transition cursor-pointer">
+                <input type="checkbox" ${wizardState.include_aramid_paper ? 'checked' : ''} onchange="wizardState.include_aramid_paper = this.checked; renderWizard();" class="rounded h-4 w-4 accent-theme">
+                <div class="text-xs">
+                  <span class="font-bold text-amber-400">Влагозащитная бумага (Арамид)</span>
+                  <span class="text-muted ml-1.5">(защита от намокания волокон, ~38.46 ₽/м²)</span>
+                </div>
+              </label>
+
+              <label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-card bg-theme-light/5 hover:border-theme transition cursor-pointer">
+                <input type="checkbox" ${wizardState.include_aramid_edging ? 'checked' : ''} onchange="wizardState.include_aramid_edging = this.checked; renderWizard();" class="rounded h-4 w-4 accent-theme">
+                <div class="text-xs">
+                  <span class="font-bold text-amber-400">Окантовка периметра лентой (Арамид)</span>
+                  <span class="text-muted ml-1.5">(защита среза по периметру, ~5.00 ₽/м)</span>
+                </div>
+              </label>
+            ` : ''}
+          </div>
+
+          <div class="pt-2 border-t border-card">
+            <div class="flex items-center justify-between mb-2">
+              <label class="text-xs font-semibold text-main">Дополнительные ткани (подкладка, 3D-сетка, велкро):</label>
+              <button type="button" onclick="addWizardExtraCover()" class="text-xs text-theme hover:underline flex items-center gap-1 font-semibold">
+                <i class="fa-solid fa-plus text-[10px]"></i> Добавить ткань
+              </button>
+            </div>
+            ${extraCoversRows ? `<div class="space-y-1.5">${extraCoversRows}</div>` : '<p class="text-[11px] text-muted italic">Дополнительные ткани не добавлены</p>'}
+          </div>
+        </div>
+      `;
+    }
+
+    function addWizardExtraCover() {
+      const covers = (appSettings.covers && appSettings.covers.length > 0) ? appSettings.covers : DEFAULT_SETTINGS.covers;
+      const first = covers[0] || { name: "Ткань Оксфорд 600D", price_per_m2: 100, area_markup_pct: 5, defect_markup_pct: 2 };
+      wizardState.extra_covers.push({
+        id: Date.now(),
+        fabric_name: first.name,
+        area_mult: 1.0,
+        price_per_m2: first.price_per_m2,
+        area_markup_pct: first.area_markup_pct || 5.0,
+        defect_markup_pct: first.defect_markup_pct || 2.0
+      });
+      renderWizard();
+    }
+
+    function removeWizardExtraCover(idx) {
+      wizardState.extra_covers.splice(idx, 1);
+      renderWizard();
+    }
+
+    // --- STEP 5: HARDWARE & EXPENSES ---
+    function renderWizardStep5(container) {
+      const stickers = (appSettings.stickers && appSettings.stickers.length > 0) ? appSettings.stickers : DEFAULT_SETTINGS.stickers;
+      const stickerOptions = stickers.map(s => `
+        <option value="${s.code}" ${wizardState.sticker_code === s.code ? 'selected' : ''}>${s.name} (${s.price} ₽)</option>
+      `).join("");
+
+      const accRows = (wizardState.accessories || []).map((a, idx) => `
+        <div class="flex items-center gap-2 p-2 rounded-xl bg-card border border-card text-xs">
+          <span class="font-bold text-main flex-1 truncate">${a.name}</span>
+          <input type="number" step="0.1" min="0.1" value="${a.qty}" oninput="wizardState.accessories[${idx}].qty = parseFloat(this.value)||0; renderWizard();" class="input-theme w-16 text-center font-mono p-1 rounded-lg">
+          <span class="text-muted text-[11px] w-8">${a.unit || 'шт'}</span>
+          <span class="text-muted font-mono">${(a.price * a.qty).toFixed(0)} ₽</span>
+          <button type="button" onclick="removeWizardAccessory(${idx})" class="p-1 text-rose-400 hover:text-rose-300">
+            <i class="fa-solid fa-trash-can text-xs"></i>
+          </button>
+        </div>
+      `).join("");
+
+      const expRows = (wizardState.expenses || []).map((e, idx) => `
+        <div class="flex items-center gap-2 p-2 rounded-xl bg-card border border-card text-xs">
+          <span class="font-bold text-main flex-1 truncate">${e.name}</span>
+          <input type="number" step="1" min="1" value="${e.qty}" oninput="wizardState.expenses[${idx}].qty = parseFloat(this.value)||0; renderWizard();" class="input-theme w-16 text-center font-mono p-1 rounded-lg">
+          <span class="text-muted text-[11px] w-8">${e.unit || 'руб'}</span>
+          <span class="text-muted font-mono">${(e.price * e.qty).toFixed(0)} ₽</span>
+          <button type="button" onclick="removeWizardExpense(${idx})" class="p-1 text-rose-400 hover:text-rose-300">
+            <i class="fa-solid fa-trash-can text-xs"></i>
+          </button>
+        </div>
+      `).join("");
+
+      container.innerHTML = `
+        <div class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div>
+              <label class="block text-xs font-semibold text-main mb-1.5">Маркировка / Термонаклейка</label>
+              <select onchange="wizardState.sticker_code = this.value; renderWizard();" class="input-theme w-full text-xs rounded-xl p-2.5 font-medium">
+                <option value="">Без маркировки</option>
+                ${stickerOptions}
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-main mb-1.5">Количество наклеек, шт</label>
+              <input type="number" min="0" max="20" value="${wizardState.sticker_qty}" oninput="wizardState.sticker_qty = parseInt(this.value)||0; renderWizard();" class="input-theme w-full text-xs rounded-xl p-2.5 font-mono">
+            </div>
+          </div>
+
+          <div class="pt-2 border-t border-card">
+            <div class="flex items-center justify-between mb-2">
+              <label class="text-xs font-semibold text-main">Фурнитура и комплектующие (велкро, стропы, молнии):</label>
+              <button type="button" onclick="addWizardAccessory()" class="text-xs text-theme hover:underline flex items-center gap-1 font-semibold">
+                <i class="fa-solid fa-plus text-[10px]"></i> Добавить фурнитуру
+              </button>
+            </div>
+            ${accRows ? `<div class="space-y-1.5">${accRows}</div>` : '<p class="text-[11px] text-muted italic">Фурнитура не выбрана (необязательно)</p>'}
+          </div>
+
+          <div class="pt-2 border-t border-card">
+            <div class="flex items-center justify-between mb-2">
+              <label class="text-xs font-semibold text-main">Дополнительные расходы (аренда, сотрудники, амортизация):</label>
+              <button type="button" onclick="addWizardExpense()" class="text-xs text-theme hover:underline flex items-center gap-1 font-semibold">
+                <i class="fa-solid fa-plus text-[10px]"></i> Добавить расход
+              </button>
+            </div>
+            ${expRows ? `<div class="space-y-1.5">${expRows}</div>` : '<p class="text-[11px] text-muted italic">Дополнительные расходы не выбраны (необязательно)</p>'}
+          </div>
+        </div>
+      `;
+    }
+
+    function addWizardAccessory() {
+      const list = (appSettings.accessories && appSettings.accessories.length > 0) ? appSettings.accessories : DEFAULT_SETTINGS.accessories;
+      const first = list[0] || { code: "VELCRO_50", name: "Велкро 50 мм", unit: "м", price: 65 };
+      wizardState.accessories.push({
+        id: Date.now(),
+        code: first.code,
+        name: first.name,
+        unit: first.unit || 'шт',
+        qty: 1,
+        price: first.price
+      });
+      renderWizard();
+    }
+
+    function removeWizardAccessory(idx) {
+      wizardState.accessories.splice(idx, 1);
+      renderWizard();
+    }
+
+    function addWizardExpense() {
+      const list = (appSettings.expenses && appSettings.expenses.length > 0) ? appSettings.expenses : (DEFAULT_SETTINGS.expenses || []);
+      const first = list[0] || { code: "EXP_1", name: "Расход на партию", unit: "руб", price: 100 };
+      wizardState.expenses.push({
+        id: Date.now(),
+        code: first.code,
+        name: first.name,
+        unit: first.unit || 'руб',
+        qty: 1,
+        price: first.price
+      });
+      renderWizard();
+    }
+
+    function removeWizardExpense(idx) {
+      wizardState.expenses.splice(idx, 1);
+      renderWizard();
+    }
+
+    // --- STEP 6: COMPLEXITY & ECONOMICS ---
+    function renderWizardStep6(container) {
+      const isAramid = wizardState.material.toLowerCase().includes("арамид");
+      const defaultMult = isAramid ? (appSettings.general && appSettings.general.aramid_default_multiplier ? appSettings.general.aramid_default_multiplier : 2.625) : (appSettings.general && appSettings.general.svmp_default_multiplier ? appSettings.general.svmp_default_multiplier : 3.465);
+
+      const selPct = wizardState.complexity_markup_pct || 0;
+
+      container.innerHTML = `
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-main mb-2 flex items-center justify-between">
+              <span>Наценка за сложность конструкции изделия:</span>
+              <span class="text-[11px] px-2 py-0.5 rounded-full font-bold ${selPct === 15 ? 'bg-rose-500/20 text-rose-400' : (selPct === 10 ? 'bg-amber-500/20 text-amber-400' : (selPct === 5 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-theme-light text-theme-dark'))}">
+                ${selPct > 0 ? `+${selPct}%` : '0% (базовая)'}
+              </span>
+            </label>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <!-- 5% Card -->
+              <div onclick="setWizardComplexity(5)" class="p-3 rounded-xl border transition cursor-pointer select-none ${selPct === 5 ? 'ring-2 ring-emerald-400 border-emerald-500 bg-emerald-500/15' : 'border-card bg-theme-light/5 hover:border-theme'}">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-bold text-main">Лёгкая</span>
+                  <span class="px-1.5 py-0.2 text-[10px] rounded font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">+5%</span>
+                </div>
+                <p class="text-[11px] text-muted">Квадрат, прямоугольник. Минимум вмешательства конструктора.</p>
+              </div>
+
+              <!-- 10% Card -->
+              <div onclick="setWizardComplexity(10)" class="p-3 rounded-xl border transition cursor-pointer select-none ${selPct === 10 ? 'ring-2 ring-amber-400 border-amber-500 bg-amber-500/15' : 'border-card bg-theme-light/5 hover:border-theme'}">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-bold text-main">Средняя</span>
+                  <span class="px-1.5 py-0.2 text-[10px] rounded font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">+10%</span>
+                </div>
+                <p class="text-[11px] text-muted">Закруглённые, разные углы, вырезы. Работа конструктора и оцифровщика.</p>
+              </div>
+
+              <!-- 15% Card -->
+              <div onclick="setWizardComplexity(15)" class="p-3 rounded-xl border transition cursor-pointer select-none ${selPct === 15 ? 'ring-2 ring-rose-400 border-rose-500 bg-rose-500/15' : 'border-card bg-theme-light/5 hover:border-theme'}">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-bold text-main">Высокая</span>
+                  <span class="px-1.5 py-0.2 text-[10px] rounded font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">+15%</span>
+                </div>
+                <p class="text-[11px] text-muted">Индивидуальные лекала. Серьёзная работа конструктора и оператора.</p>
+              </div>
+            </div>
+
+            ${selPct > 0 ? `
+              <div class="mt-2 text-right">
+                <button type="button" onclick="setWizardComplexity(0)" class="text-[11px] text-muted hover:text-theme underline">
+                  Сбросить наценку к 0%
+                </button>
+              </div>
+            ` : ''}
+          </div>
+
+          <div class="pt-2 border-t border-card grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div>
+              <label class="block text-xs font-semibold text-main mb-1.5">Стоимость пошива за 1 деталь кроя, ₽</label>
+              <input type="number" step="10" min="0" placeholder="200" value="${wizardState.work_price_per_part}" oninput="wizardState.work_price_per_part = this.value; renderWizard();" class="input-theme w-full text-xs rounded-xl p-2.5 font-mono">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-main mb-1.5">Коэффициент наценки (множитель)</label>
+              <input type="number" step="0.05" min="1" placeholder="${defaultMult}" value="${wizardState.custom_markup}" oninput="wizardState.custom_markup = this.value; renderWizard();" class="input-theme w-full text-xs rounded-xl p-2.5 font-mono">
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function setWizardComplexity(pct) {
+      if (wizardState.complexity_markup_pct === pct) {
+        wizardState.complexity_markup_pct = 0;
+      } else {
+        wizardState.complexity_markup_pct = pct;
+      }
+      renderWizard();
+    }
+
+    // --- STEP 7: INTERACTIVE RESULTS SCREEN ---
+    function renderWizardStep7(container) {
+      const res = calculateWizardTotals();
+
+      const mats = (appSettings.materials && appSettings.materials.length > 0) ? appSettings.materials : DEFAULT_SETTINGS.materials;
+      const isAramid = wizardState.material.toLowerCase().includes("арамид");
+
+      // Render layer comparison matrix
+      let layerMatrixHtml = "";
+      mats.forEach(m => {
+        const matLayers = getAllowedLayers(m.name);
+        const mIsAramid = m.name.toLowerCase().includes("арамид");
+        const defMult = m.default_multiplier || (mIsAramid ? (appSettings.general && appSettings.general.aramid_default_multiplier ? appSettings.general.aramid_default_multiplier : 2.625) : (appSettings.general && appSettings.general.svmp_default_multiplier ? appSettings.general.svmp_default_multiplier : 3.465));
+        const mult = (wizardState.custom_markup && parseFloat(wizardState.custom_markup) > 0) ? parseFloat(wizardState.custom_markup) : defMult;
+        const matPriceM2 = parseFloat(m.price_per_m2) || 456.25;
+
+        layerMatrixHtml += `
+          <div class="p-2.5 rounded-xl bg-card border border-card">
+            <div class="text-[11px] font-bold ${mIsAramid ? 'text-amber-400' : 'text-sky-400'} mb-1.5 flex justify-between">
+              <span>${m.name}</span>
+              <span class="opacity-70 font-mono text-[9px]">×${mult}</span>
+            </div>
+            <div class="grid grid-cols-2 gap-1.5">
+        `;
+
+        matLayers.forEach(l => {
+          const isSel = (wizardState.material === m.name && wizardState.layers === l);
+          const bCost = res.totalSingleAreaM2 * l * matPriceM2;
+          let aramidExtra = 0;
+          if (mIsAramid) {
+            if (wizardState.include_aramid_paper) aramidExtra += res.totalSingleAreaM2 * (appSettings.general.aramid_paper_price_per_m2 || 38.46);
+            if (wizardState.include_aramid_edging) aramidExtra += res.totalPerimeterM * (appSettings.general.aramid_edging_price_per_m || 5.0);
+          }
+          const tCost = bCost + res.petCost + res.totalCoverCost + res.accessoriesCost + res.expensesCost + res.stickerCost + res.workCost + aramidExtra;
+          const rawP = tCost * mult * res.complexityFactor;
+          const pPrice = rawP > 0 ? Math.ceil(Math.round(rawP * 10000) / 10000 / 100) * 100 : 0;
+
+          layerMatrixHtml += `
+            <button type="button" onclick="selectWizardHeroLayer('${m.name.replace(/'/g, "\'")}', ${l})" class="p-1.5 rounded-lg border text-left transition cursor-pointer flex justify-between items-center ${isSel ? 'ring-2 ring-theme border-theme bg-theme text-white font-bold' : 'border-card bg-theme-light/5 hover:border-theme text-main'}">
+              <span class="text-xs font-mono">${l} сл.</span>
+              <span class="text-xs font-bold font-mono ${isSel ? 'text-white' : 'text-emerald-400'}">${pPrice.toLocaleString("ru-RU")} ₽</span>
+            </button>
+          `;
+        });
+
+        layerMatrixHtml += `</div></div>`;
+      });
+
+      container.innerHTML = `
+        <div class="space-y-4">
+          <!-- Hero Result Card -->
+          <div class="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 text-white border border-slate-700 shadow-xl">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+              <div>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Итоговая продажная цена</span>
+                <div class="text-2xl sm:text-3xl font-black text-emerald-400 font-mono tracking-tight">
+                  ${res.salePrice.toLocaleString("ru-RU")} ₽
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                ${res.complexityPct > 0 ? `
+                  <span class="px-2 py-1 rounded-lg text-xs font-bold ${res.complexityPct === 15 ? 'bg-rose-500/25 text-rose-300 border border-rose-500/40' : (res.complexityPct === 10 ? 'bg-amber-500/25 text-amber-300 border border-amber-500/40' : 'bg-emerald-500/25 text-emerald-300 border border-emerald-500/40')}">
+                    +${res.complexityPct}% сложн.
+                  </span>
+                ` : ''}
+                <span class="px-2 py-1 rounded-lg text-xs font-bold bg-white/10 text-slate-200 border border-white/15 font-mono">
+                  ×${res.multiplier}
+                </span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-white/10 text-xs">
+              <div>
+                <span class="text-[10px] text-slate-400 block">Себестоимость</span>
+                <span class="font-bold font-mono text-slate-200">${res.totalCost.toFixed(2)} ₽</span>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-400 block">Маржа (прибыль)</span>
+                <span class="font-bold font-mono text-emerald-300">+${res.profit.toLocaleString("ru-RU")} ₽ (${res.marginPct}%)</span>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-400 block">Слои / Материал</span>
+                <span class="font-bold font-mono text-slate-200">${wizardState.material} (${wizardState.layers} сл.)</span>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-400 block">Площадь пакета</span>
+                <span class="font-bold font-mono text-slate-200">${res.totalSingleAreaM2.toFixed(4)} м²</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Interactive Action Buttons -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <button type="button" onclick="copyWizardProposal()" class="p-3 rounded-xl bg-theme-light text-theme-dark font-semibold text-xs hover:opacity-90 transition flex items-center justify-center gap-2 shadow-sm cursor-pointer border border-theme/30">
+              <i class="fa-solid fa-copy"></i>
+              <span>Скопировать КП</span>
+            </button>
+
+            <button type="button" onclick="applyWizardToMainCalculator()" class="p-3 rounded-xl bg-theme bg-theme-hover text-white font-semibold text-xs transition flex items-center justify-center gap-2 shadow-md cursor-pointer">
+              <i class="fa-solid fa-arrow-down-to-bracket"></i>
+              <span>В основной калькулятор</span>
+            </button>
+
+            <button type="button" onclick="saveWizardToHistory()" class="p-3 rounded-xl bg-card border border-card hover:border-theme text-main font-semibold text-xs transition flex items-center justify-center gap-2 shadow-sm cursor-pointer">
+              <i class="fa-solid fa-cloud-arrow-up text-theme"></i>
+              <span>Сохранить в историю</span>
+            </button>
+          </div>
+
+          <!-- Matrix Comparison -->
+          <div>
+            <label class="block text-xs font-semibold text-main mb-2 flex items-center gap-1.5">
+              <i class="fa-solid fa-table-cells text-theme"></i> Сравнение вариантов по слоям (кликните для выбора):
+            </label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              ${layerMatrixHtml}
+            </div>
+          </div>
+
+          <!-- Cost Breakdown List -->
+          <div class="p-3.5 rounded-xl bg-card border border-card text-xs space-y-1.5">
+            <div class="font-bold text-main mb-1">Структура себестоимости:</div>
+            <div class="flex justify-between text-muted">
+              <span>• Баллистическое полотно (${res.calculatedMaterialAreaM2.toFixed(4)} м²):</span>
+              <span class="font-mono text-main">${res.ballisticCost.toFixed(2)} ₽</span>
+            </div>
+            <div class="flex justify-between text-muted">
+              <span>• Чехол (${wizardState.cover_material}, ${wizardState.cover_two_sided ? '2 стороны' : '1 сторона'}):</span>
+              <span class="font-mono text-main">${res.primaryCoverCost.toFixed(2)} ₽</span>
+            </div>
+            ${res.petCost > 0 ? `
+              <div class="flex justify-between text-muted">
+                <span>• Подпорка ПЭТ:</span>
+                <span class="font-mono text-main">${res.petCost.toFixed(2)} ₽</span>
+              </div>
+            ` : ''}
+            ${res.extraCoversCost > 0 ? `
+              <div class="flex justify-between text-muted">
+                <span>• Дополнительные ткани:</span>
+                <span class="font-mono text-main">${res.extraCoversCost.toFixed(2)} ₽</span>
+              </div>
+            ` : ''}
+            ${res.accessoriesCost > 0 ? `
+              <div class="flex justify-between text-muted">
+                <span>• Фурнитура и комплектующие:</span>
+                <span class="font-mono text-main">${res.accessoriesCost.toFixed(2)} ₽</span>
+              </div>
+            ` : ''}
+            ${res.expensesCost > 0 ? `
+              <div class="flex justify-between text-muted">
+                <span>• Дополнительные расходы:</span>
+                <span class="font-mono text-main">${res.expensesCost.toFixed(2)} ₽</span>
+              </div>
+            ` : ''}
+            <div class="flex justify-between text-muted">
+              <span>• Пошив (${res.totalPartsCount} дет. × ${res.workRate} ₽):</span>
+              <span class="font-mono text-main">${res.workCost.toFixed(2)} ₽</span>
+            </div>
+            ${res.complexityDiff > 0 ? `
+              <div class="flex justify-between font-semibold text-amber-400 pt-1 border-t border-card">
+                <span>• Наценка за сложность конструкции (+${res.complexityPct}%):</span>
+                <span class="font-mono">+${res.complexityDiff.toLocaleString("ru-RU")} ₽</span>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    function selectWizardHeroLayer(mat, layers) {
+      wizardState.material = mat;
+      wizardState.layers = layers;
+      renderWizard();
+    }
+
+    // --- WIZARD ACTIONS ---
+    function applyWizardToMainCalculator() {
+      // 1. Product Name & Code
+      const nameInput = document.getElementById("product_name");
+      const codeInput = document.getElementById("product_code");
+      if (nameInput) nameInput.value = wizardState.product_name || "";
+      if (codeInput) codeInput.value = wizardState.product_code || "";
+
+      // 2. Material & Layers
+      const matSelect = document.getElementById("material");
+      if (matSelect) {
+        matSelect.value = wizardState.material || "СВМПэ";
+        onMaterialChange();
+      }
+      const layersSelect = document.getElementById("layers");
+      if (layersSelect) {
+        layersSelect.value = wizardState.layers || 25;
+      }
+
+      // 3. Parts
+      parts = JSON.parse(JSON.stringify(wizardState.parts));
+      renderParts();
+
+      // 4. Cover & Options
+      const coverSelect = document.getElementById("cover_material");
+      const coverTwoSidedChk = document.getElementById("cover_two_sided");
+      const petChk = document.getElementById("include_pet");
+      if (coverSelect) coverSelect.value = wizardState.cover_material || "Ткань для УЗ";
+      if (coverTwoSidedChk) coverTwoSidedChk.checked = !!wizardState.cover_two_sided;
+      if (petChk) petChk.checked = !!wizardState.include_pet;
+
+      const paperChk = document.getElementById("include_aramid_paper");
+      const edgChk = document.getElementById("include_aramid_edging");
+      if (paperChk) paperChk.checked = !!wizardState.include_aramid_paper;
+      if (edgChk) edgChk.checked = !!wizardState.include_aramid_edging;
+
+      // 5. Extra Covers, Accessories, Expenses
+      extraCovers = JSON.parse(JSON.stringify(wizardState.extra_covers || []));
+      renderExtraCovers();
+
+      accessories = JSON.parse(JSON.stringify(wizardState.accessories || []));
+      renderAccessories();
+
+      expenses = JSON.parse(JSON.stringify(wizardState.expenses || []));
+      renderExpenses();
+
+      // 6. Stickers
+      const stickerCodeInput = document.getElementById("sticker_code");
+      const stickerQtyInput = document.getElementById("sticker_qty");
+      if (stickerCodeInput) stickerCodeInput.value = wizardState.sticker_code || "";
+      if (stickerQtyInput) stickerQtyInput.value = wizardState.sticker_qty || 0;
+
+      // 7. Complexity Markup
+      setComplexityMarkup(wizardState.complexity_markup_pct || 0);
+
+      // 8. Work Rate & Multiplier
+      const workInput = document.getElementById("work_price_per_part");
+      const markupInput = document.getElementById("custom_markup");
+      if (workInput) workInput.value = wizardState.work_price_per_part || "";
+      if (markupInput) markupInput.value = wizardState.custom_markup || "";
+
+      calculateNow();
+      closeWizardModal();
+      switchTab("calculator");
+      showToast("Параметры из мастера перенесены в основной калькулятор!");
+    }
+
+    function saveWizardToHistory() {
+      const res = calculateWizardTotals();
+      const list = getHistoryList();
+      const partsSummary = (wizardState.parts || []).map(p => `${p.length_cm}×${p.width_cm} см (${p.quantity} шт)`).join(", ");
+      const author = getCurrentUserIdentifier();
+
+      const item = {
+        id: list.length > 0 ? (Number(list[0].id) + 1 || Date.now()) : Date.now(),
+        created_at: new Date().toISOString(),
+        product_name: wizardState.product_name || "Баллистический пакет (Мастер)",
+        product_code: wizardState.product_code || "",
+        material: wizardState.material || "СВМПэ",
+        layers: parseInt(wizardState.layers) || 25,
+        parts: JSON.parse(JSON.stringify(wizardState.parts)),
+        parts_summary: partsSummary,
+        cover_material: wizardState.cover_material || "Ткань для УЗ",
+        cover_two_sided: !!wizardState.cover_two_sided,
+        include_pet: !!wizardState.include_pet,
+        extra_covers: JSON.parse(JSON.stringify(wizardState.extra_covers || [])),
+        accessories: JSON.parse(JSON.stringify(wizardState.accessories || [])),
+        expenses: JSON.parse(JSON.stringify(wizardState.expenses || [])),
+        sticker_code: wizardState.sticker_code || "",
+        sticker_qty: parseInt(wizardState.sticker_qty) || 0,
+        custom_markup: wizardState.custom_markup || "",
+        work_price_per_part: wizardState.work_price_per_part || "",
+        include_aramid_paper: !!wizardState.include_aramid_paper,
+        include_aramid_edging: !!wizardState.include_aramid_edging,
+        complexity_markup_pct: wizardState.complexity_markup_pct || 0,
+        total_cost: parseFloat(res.totalCost.toFixed(2)),
+        sale_price: res.salePrice,
+        author: author
+      };
+
+      list.unshift(item);
+      saveHistoryList(list);
+
+      if (appSettings.cloud_sync && appSettings.cloud_sync.auto_save && appSettings.cloud_sync.url) {
+        sendRecordsToGoogleSheet([item], false);
+        showToast("Расчет сохранен в историю и отправлен в Google Таблицу!");
+      } else {
+        showToast("Расчет успешно сохранен в историю!");
+      }
+    }
+
+    function copyWizardProposal() {
+      const res = calculateWizardTotals();
+      const prodName = wizardState.product_name.trim() || "Баллистический пакет";
+      const prodCode = wizardState.product_code.trim();
+      const codeStr = prodCode ? ` [${prodCode}]` : "";
+      const coverMat = wizardState.cover_material || "Ткань для УЗ";
+      const twoSided = wizardState.cover_two_sided ? "2 стороны" : "1 сторона";
+      const sticker = wizardState.sticker_code || "Стандарт";
+
+      let partsStr = (wizardState.parts || []).map((p, idx) => `  • Деталь ${idx+1}: ${p.length_cm} × ${p.width_cm} см (периметр ${p.perimeter_mm} мм) — ${p.quantity} шт.`).join("\n");
+      let extraCoversStr = (wizardState.extra_covers && wizardState.extra_covers.length > 0) ? "\nДополнительные ткани:\n" + wizardState.extra_covers.map(e => `  • ${e.fabric_name || e.name || ''} (${e.area_mult || 1}×)`).join("\n") : "";
+      let accStr = (wizardState.accessories && wizardState.accessories.length > 0) ? "\nФурнитура:\n" + wizardState.accessories.map(a => `  • ${a.name}: ${a.qty} ${a.unit} (по ${a.price} ₽)`).join("\n") : "";
+      let expStr = (wizardState.expenses && wizardState.expenses.length > 0) ? "\nДополнительные расходы:\n" + wizardState.expenses.map(e => `  • ${e.name}: ${e.qty} ${e.unit || 'руб'} (по ${e.price} ₽)`).join("\n") : "";
+
+      const mats = (appSettings.materials && appSettings.materials.length > 0) ? appSettings.materials : DEFAULT_SETTINGS.materials;
+      const svmpMat = mats.find(m => !m.name.toLowerCase().includes("арамид")) || { price_per_m2: 456.25, name: "СВМПэ" };
+      const aramidMat = mats.find(m => m.name.toLowerCase().includes("арамид")) || { price_per_m2: 1530.0, name: "Арамид" };
+
+      const svmpMult = (wizardState.custom_markup && parseFloat(wizardState.custom_markup) > 0) ? parseFloat(wizardState.custom_markup) : (svmpMat.default_multiplier || 3.465);
+      const aramidMult = (wizardState.custom_markup && parseFloat(wizardState.custom_markup) > 0) ? parseFloat(wizardState.custom_markup) : (aramidMat.default_multiplier || 2.625);
+
+      const commonOtherCost = res.petCost + res.totalCoverCost + res.accessoriesCost + res.expensesCost + res.stickerCost + res.workCost;
+
+      const getSvmpP = (l) => {
+        const t = (res.totalSingleAreaM2 * l * (svmpMat.price_per_m2 || 456.25)) + commonOtherCost;
+        const raw = t * svmpMult * res.complexityFactor;
+        return raw > 0 ? Math.ceil(Math.round(raw * 10000) / 10000 / 100) * 100 : 0;
+      };
+
+      const papCost = wizardState.include_aramid_paper ? res.totalSingleAreaM2 * (appSettings.general.aramid_paper_price_per_m2 || 38.46) : 0;
+      const edgCost = wizardState.include_aramid_edging ? res.totalPerimeterM * (appSettings.general.aramid_edging_price_per_m || 5.0) : 0;
+
+      const getAramidP = (l) => {
+        const t = (res.totalSingleAreaM2 * l * (aramidMat.price_per_m2 || 1530.0)) + commonOtherCost + papCost + edgCost;
+        const raw = t * aramidMult * res.complexityFactor;
+        return raw > 0 ? Math.ceil(Math.round(raw * 10000) / 10000 / 100) * 100 : 0;
+      };
+
+      const svmpLayers = getAllowedLayers(svmpMat.name);
+      const svmpLines = svmpLayers.map(l => `  • ${l} слоёв — ${getSvmpP(l).toLocaleString("ru-RU")} ₽`).join("\n");
+
+      const aramidLayers = getAllowedLayers(aramidMat.name);
+      const aramidLines = aramidLayers.map(l => `  • ${l} слоёв — ${getAramidP(l).toLocaleString("ru-RU")} ₽`).join("\n");
+
+      const complexityStr = res.complexityPct > 0 ? `\nСложность конструкции: +${res.complexityPct}% (${getComplexityTitle(res.complexityPct)})` : "";
+
+      const text = `📋 КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ / РАСЧЁТ ЦЕН
+Изделие: ${prodName}${codeStr}
+Детали кроя:
+${partsStr}${complexityStr}
+
+Материал: СВМПэ (баллистический полиэтилен):
+${svmpLines}
+
+Материал: АРАМИД (Тварон / Кевлар):
+${aramidLines}
+
+Комплектация: Чехол (${coverMat}, ${twoSided}), подпорка ПЭТ, маркировка (${sticker}).${extraCoversStr}${accStr}${expStr}
+Дата: ${new Date().toLocaleDateString("ru-RU")}
+Создано в Мастере blstcs.ru`;
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => showToast("Коммерческое предложение скопировано!"))
+          .catch(() => fallbackCopyText(text));
+      } else {
+        fallbackCopyText(text);
+      }
     }
 
     // --- SITE AUTHENTICATION FUNCTIONS (LOGIN + PASSWORD) ---
