@@ -337,6 +337,121 @@
               <span>Суммарная площадь кроя (1 слой): <strong id="summary-single-area" class="text-main font-mono">0.0000</strong> м²</span>
               <span>Всего деталей: <strong id="summary-parts-count" class="text-main font-mono">0</strong> шт</span>
             </div>
+
+            <!-- Complexity of Construction Section (Наценка за сложность конструкции) -->
+            <div class="mt-4 pt-3 border-t border-card">
+              <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-semibold text-main flex items-center gap-1.5">
+                    <i class="fa-solid fa-drafting-compass text-theme"></i> Наценка за сложность конструкции:
+                  </span>
+                  <span id="lbl-complexity-badge" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-theme-light text-theme-dark border border-theme/30 transition-all">
+                    0% (базовая)
+                  </span>
+                </div>
+                <button type="button" onclick="setComplexityMarkup(0)" id="btn-complexity-reset" class="text-[11px] text-muted hover:text-theme transition hidden">
+                  <i class="fa-solid fa-rotate-left text-[10px]"></i> Сбросить наценку
+                </button>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <!-- Option 1: 5% -->
+                <div onclick="toggleComplexityMarkup(5)" id="complexity-card-5" class="complexity-option-card relative p-2.5 sm:p-3 rounded-xl border border-card bg-theme-light/5 hover:border-theme transition cursor-pointer select-none">
+                  <div class="flex items-start justify-between gap-1.5">
+                    <label class="flex items-start gap-2.5 cursor-pointer pointer-events-none">
+                      <input type="checkbox" id="chk-complexity-5" class="mt-0.5 rounded h-4 w-4 accent-theme pointer-events-auto" onclick="event.stopPropagation(); toggleComplexityMarkup(5);">
+                      <div>
+                        <div class="flex items-center gap-1.5">
+                          <span class="text-xs font-bold text-main">Лёгкая</span>
+                          <span class="px-1.5 py-0.2 text-[10px] rounded-md font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">+5%</span>
+                        </div>
+                        <p class="text-[11px] text-muted mt-0.5">Квадрат, прямоугольник</p>
+                      </div>
+                    </label>
+                    
+                    <!-- Tooltip with Question Icon -->
+                    <div class="relative group/tip flex-shrink-0" onclick="event.stopPropagation()">
+                      <button type="button" class="text-muted hover:text-theme p-1 transition" title="Подробнее">
+                        <i class="fa-solid fa-circle-question text-xs"></i>
+                      </button>
+                      <div class="absolute bottom-full left-0 sm:left-1/2 sm:-translate-x-1/2 mb-2 hidden group-hover/tip:block group-focus-within/tip:block w-72 p-3 rounded-xl bg-slate-900/95 backdrop-blur-md text-slate-100 text-[11px] leading-relaxed shadow-2xl border border-slate-700 z-50">
+                        <div class="font-bold text-emerald-400 mb-1 flex items-center gap-1.5">
+                          <i class="fa-solid fa-square text-[10px]"></i> Наценка +5%: Лёгкая конструкция
+                        </div>
+                        <p class="text-slate-300">
+                          5% — на лёгкие в конструкции изделия (квадрат, прямоугольник), которые требуют малого вмешательства конструктора / оцифровщика. Простые прямолинейные формы без сложных скруглений.
+                        </p>
+                        <div class="absolute top-full left-3 sm:left-1/2 sm:-translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Option 2: 10% -->
+                <div onclick="toggleComplexityMarkup(10)" id="complexity-card-10" class="complexity-option-card relative p-2.5 sm:p-3 rounded-xl border border-card bg-theme-light/5 hover:border-theme transition cursor-pointer select-none">
+                  <div class="flex items-start justify-between gap-1.5">
+                    <label class="flex items-start gap-2.5 cursor-pointer pointer-events-none">
+                      <input type="checkbox" id="chk-complexity-10" class="mt-0.5 rounded h-4 w-4 accent-theme pointer-events-auto" onclick="event.stopPropagation(); toggleComplexityMarkup(10);">
+                      <div>
+                        <div class="flex items-center gap-1.5">
+                          <span class="text-xs font-bold text-main">Средняя</span>
+                          <span class="px-1.5 py-0.2 text-[10px] rounded-md font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">+10%</span>
+                        </div>
+                        <p class="text-[11px] text-muted mt-0.5">Закруглённые, углы, вырезы</p>
+                      </div>
+                    </label>
+                    
+                    <!-- Tooltip with Question Icon -->
+                    <div class="relative group/tip flex-shrink-0" onclick="event.stopPropagation()">
+                      <button type="button" class="text-muted hover:text-theme p-1 transition" title="Подробнее">
+                        <i class="fa-solid fa-circle-question text-xs"></i>
+                      </button>
+                      <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/tip:block group-focus-within/tip:block w-72 p-3 rounded-xl bg-slate-900/95 backdrop-blur-md text-slate-100 text-[11px] leading-relaxed shadow-2xl border border-slate-700 z-50">
+                        <div class="font-bold text-amber-400 mb-1 flex items-center gap-1.5">
+                          <i class="fa-solid fa-vector-square text-[10px]"></i> Наценка +10%: Средняя сложность
+                        </div>
+                        <p class="text-slate-300">
+                          10% — средние по сложности конструкции изделия (закруглённые, с разными углами, вырезами), которые требуют вмешательства конструктора и оцифровщика для адаптации лекал.
+                        </p>
+                        <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Option 3: 15% -->
+                <div onclick="toggleComplexityMarkup(15)" id="complexity-card-15" class="complexity-option-card relative p-2.5 sm:p-3 rounded-xl border border-card bg-theme-light/5 hover:border-theme transition cursor-pointer select-none">
+                  <div class="flex items-start justify-between gap-1.5">
+                    <label class="flex items-start gap-2.5 cursor-pointer pointer-events-none">
+                      <input type="checkbox" id="chk-complexity-15" class="mt-0.5 rounded h-4 w-4 accent-theme pointer-events-auto" onclick="event.stopPropagation(); toggleComplexityMarkup(15);">
+                      <div>
+                        <div class="flex items-center gap-1.5">
+                          <span class="text-xs font-bold text-main">Высокая</span>
+                          <span class="px-1.5 py-0.2 text-[10px] rounded-md font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">+15%</span>
+                        </div>
+                        <p class="text-[11px] text-muted mt-0.5">Индивидуальные лекала</p>
+                      </div>
+                    </label>
+                    
+                    <!-- Tooltip with Question Icon -->
+                    <div class="relative group/tip flex-shrink-0" onclick="event.stopPropagation()">
+                      <button type="button" class="text-muted hover:text-theme p-1 transition" title="Подробнее">
+                        <i class="fa-solid fa-circle-question text-xs"></i>
+                      </button>
+                      <div class="absolute bottom-full right-0 sm:left-1/2 sm:-translate-x-1/2 mb-2 hidden group-hover/tip:block group-focus-within/tip:block w-72 p-3 rounded-xl bg-slate-900/95 backdrop-blur-md text-slate-100 text-[11px] leading-relaxed shadow-2xl border border-slate-700 z-50">
+                        <div class="font-bold text-rose-400 mb-1 flex items-center gap-1.5">
+                          <i class="fa-solid fa-layer-group text-[10px]"></i> Наценка +15%: Высокая сложность
+                        </div>
+                        <p class="text-slate-300">
+                          15% — высокие по сложности изделия (разработка индивидуальных лекал), которые требуют серьёзной работы конструктора, оператора и оцифровщика.
+                        </p>
+                        <div class="absolute top-full right-3 sm:left-1/2 sm:-translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Card: Cover, PET & Accessories -->
@@ -502,7 +617,10 @@
               </div>
               <div>
                 <p class="text-xs text-slate-300">Коэфф. наценки</p>
-                <p class="text-lg font-bold hero-price-val font-mono">× <span id="res-multiplier">0</span></p>
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="text-lg font-bold hero-price-val font-mono">× <span id="res-multiplier">0</span></span>
+                  <span id="hero-complexity-badge" class="hidden text-[10px] px-1.5 py-0.5 rounded font-bold bg-amber-400/25 text-amber-200 border border-amber-400/30">+10%</span>
+                </div>
               </div>
               <!-- Compact All Layers & Types Grid inside Hero Card -->
             <div class="mt-4 pt-3 border-t border-white/15 space-y-2.5">
@@ -614,6 +732,13 @@
               <div class="pt-3 border-t border-card flex justify-between items-center text-sm font-bold text-main">
                 <span>Полная себестоимость:</span>
                 <span class="text-theme font-mono"><span id="res-total-cost-2">0.00</span> ₽</span>
+              </div>
+
+              <div id="row-complexity-markup" class="pt-2 border-t border-card/60 flex justify-between items-center text-xs font-semibold text-main hidden">
+                <span class="text-muted flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span> Наценка за сложность (<span id="res-complexity-pct">0%</span>):
+                </span>
+                <span class="font-mono text-amber-400">+<span id="res-complexity-diff">0.00</span> ₽</span>
               </div>
             </div>
 
@@ -1583,6 +1708,7 @@
     let extraCovers = []; // Array of { id, fabric_name, label, area_mult, price_per_m2, area_markup_pct, defect_markup_pct }
     let accessories = []; // Array of { id, code, name, unit, qty, price, is_custom }
     let expenses = []; // Array of { id, code, name, unit, qty, price, is_custom }
+    let selectedComplexityMarkup = 0; // 0, 5, 10, or 15 %
     let lastCalculated = null;
 
     // History State
@@ -1605,6 +1731,7 @@
       renderExtraCovers();
       renderAccessories();
       renderExpenses();
+      updateComplexityUI();
       loadHistoryBadge();
       updateLayersDropdown(25);
       calculateNow();
@@ -2819,6 +2946,92 @@
       showToast(`Сброс к наценке: ×${defaultMult}`);
     }
 
+    // ================= COMPLEXITY MARKUP MANAGEMENT =================
+    function getComplexityTitle(pct) {
+      if (pct === 5) return "Лёгкая (квадрат, прямоугольник)";
+      if (pct === 10) return "Средняя (закруглённые, вырезы, углы)";
+      if (pct === 15) return "Высокая (индивидуальные лекала)";
+      return "Базовая (без наценки)";
+    }
+
+    function getComplexityDescription(pct) {
+      if (pct === 5) return "5% — на лёгкие в конструкции изделия (квадрат, прямоугольник), которые требуют малого вмешательства конструктора / оцифровщика";
+      if (pct === 10) return "10% — средние по сложности конструкции изделия (закруглённые, с разными углами, вырезами), требующие вмешательства конструктора и оцифровщика";
+      if (pct === 15) return "15% — высокие по сложности изделия (разработка индивидуальных лекал), требующие серьёзной работы конструктора, оператора и оцифровщика";
+      return "0% — базовая сложность изделия без наценки";
+    }
+
+    function setComplexityMarkup(pct) {
+      const num = Number(pct);
+      selectedComplexityMarkup = [5, 10, 15].includes(num) ? num : 0;
+      updateComplexityUI();
+      calculateNow();
+    }
+
+    function toggleComplexityMarkup(pct) {
+      const num = Number(pct);
+      if (selectedComplexityMarkup === num) {
+        setComplexityMarkup(0);
+      } else {
+        setComplexityMarkup(num);
+      }
+    }
+
+    function updateComplexityUI() {
+      const chk5 = document.getElementById("chk-complexity-5");
+      const chk10 = document.getElementById("chk-complexity-10");
+      const chk15 = document.getElementById("chk-complexity-15");
+      if (chk5) chk5.checked = (selectedComplexityMarkup === 5);
+      if (chk10) chk10.checked = (selectedComplexityMarkup === 10);
+      if (chk15) chk15.checked = (selectedComplexityMarkup === 15);
+
+      const card5 = document.getElementById("complexity-card-5");
+      const card10 = document.getElementById("complexity-card-10");
+      const card15 = document.getElementById("complexity-card-15");
+
+      const styleCard = (card, isSel, ringCls, borderCls, bgCls) => {
+        if (!card) return;
+        card.classList.remove(
+          "ring-2", "ring-emerald-400", "ring-amber-400", "ring-rose-400",
+          "border-emerald-500", "border-amber-500", "border-rose-500",
+          "bg-emerald-500/15", "bg-amber-500/15", "bg-rose-500/15"
+        );
+        if (isSel) {
+          card.classList.remove("border-card", "bg-theme-light/5");
+          card.classList.add("ring-2", ringCls, borderCls, bgCls);
+        } else {
+          card.classList.add("border-card", "bg-theme-light/5");
+        }
+      };
+
+      styleCard(card5, selectedComplexityMarkup === 5, "ring-emerald-400", "border-emerald-500", "bg-emerald-500/15");
+      styleCard(card10, selectedComplexityMarkup === 10, "ring-amber-400", "border-amber-500", "bg-amber-500/15");
+      styleCard(card15, selectedComplexityMarkup === 15, "ring-rose-400", "border-rose-500", "bg-rose-500/15");
+
+      const badge = document.getElementById("lbl-complexity-badge");
+      if (badge) {
+        if (selectedComplexityMarkup === 5) {
+          badge.className = "px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all";
+          badge.innerText = "+5% (лёгкая)";
+        } else if (selectedComplexityMarkup === 10) {
+          badge.className = "px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 transition-all";
+          badge.innerText = "+10% (средняя)";
+        } else if (selectedComplexityMarkup === 15) {
+          badge.className = "px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30 transition-all";
+          badge.innerText = "+15% (высокая)";
+        } else {
+          badge.className = "px-2 py-0.5 rounded-full text-[11px] font-bold bg-theme-light text-theme-dark border border-theme/30 transition-all";
+          badge.innerText = "0% (базовая)";
+        }
+      }
+
+      const resetBtn = document.getElementById("btn-complexity-reset");
+      if (resetBtn) {
+        if (selectedComplexityMarkup > 0) resetBtn.classList.remove("hidden");
+        else resetBtn.classList.add("hidden");
+      }
+    }
+
     // ================= PURE CLIENT-SIDE CALCULATION ENGINE =================
     function calculateNow() {
       let totalSingleAreaCm2 = 0;
@@ -2919,8 +3132,13 @@
       const defaultMult = isAramid ? (appSettings.general.aramid_default_multiplier || 2.625) : (appSettings.general.svmp_default_multiplier || 3.465);
       const multiplier = (!isNaN(customMarkupInput) && customMarkupInput > 0) ? customMarkupInput : defaultMult;
 
-      const rawSale = totalCost * multiplier;
+      const complexityFactor = 1.0 + (selectedComplexityMarkup / 100.0);
+      const baseRawSale = totalCost * multiplier;
+      const baseSalePrice = baseRawSale > 0 ? Math.ceil(Math.round(baseRawSale * 10000) / 10000 / 100) * 100 : 0;
+
+      const rawSale = totalCost * multiplier * complexityFactor;
       const salePrice = rawSale > 0 ? Math.ceil(Math.round(rawSale * 10000) / 10000 / 100) * 100 : 0;
+      const complexityDiff = Math.max(0, salePrice - baseSalePrice);
 
       lastCalculated = {
         totalSingleAreaM2,
@@ -2941,6 +3159,10 @@
         workCost,
         totalCost,
         multiplier,
+        complexityMarkup: selectedComplexityMarkup,
+        complexityFactor,
+        baseSalePrice,
+        complexityDiff,
         salePrice
       };
 
@@ -3005,6 +3227,36 @@
       document.getElementById("res-work-count").innerText = totalPartsCount;
       document.getElementById("res-total-cost-2").innerText = totalCost.toFixed(2);
 
+      // Complexity markup display in Breakdown & Hero Card
+      const heroComplexityBadge = document.getElementById("hero-complexity-badge");
+      if (heroComplexityBadge) {
+        if (selectedComplexityMarkup > 0) {
+          heroComplexityBadge.classList.remove("hidden");
+          heroComplexityBadge.innerText = `+${selectedComplexityMarkup}%`;
+          heroComplexityBadge.className = `text-[10px] px-1.5 py-0.5 rounded font-bold border transition ${
+            selectedComplexityMarkup === 15 ? 'bg-rose-500/25 text-rose-200 border-rose-400/40' :
+            (selectedComplexityMarkup === 10 ? 'bg-amber-400/25 text-amber-200 border-amber-400/40' :
+            'bg-emerald-500/25 text-emerald-200 border-emerald-400/40')
+          }`;
+          heroComplexityBadge.title = `Наценка за сложность: +${selectedComplexityMarkup}% (${getComplexityTitle(selectedComplexityMarkup)})`;
+        } else {
+          heroComplexityBadge.classList.add("hidden");
+        }
+      }
+
+      const rowComplexity = document.getElementById("row-complexity-markup");
+      const resComplexityPct = document.getElementById("res-complexity-pct");
+      const resComplexityDiff = document.getElementById("res-complexity-diff");
+      if (rowComplexity) {
+        if (selectedComplexityMarkup > 0) {
+          rowComplexity.classList.remove("hidden");
+          if (resComplexityPct) resComplexityPct.innerText = `+${selectedComplexityMarkup}%`;
+          if (resComplexityDiff) resComplexityDiff.innerText = complexityDiff.toLocaleString("ru-RU", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        } else {
+          rowComplexity.classList.add("hidden");
+        }
+      }
+
       document.getElementById("res-area-single").innerText = `${totalSingleAreaM2.toFixed(4)} м²`;
       document.getElementById("res-area-material").innerText = `${calculatedMaterialAreaM2.toFixed(4)} м²`;
       document.getElementById("res-perimeter-total").innerText = `${totalPerimeterM.toFixed(2)} м`;
@@ -3040,7 +3292,7 @@
           <div class="bg-black/25 rounded-xl p-2.5 border border-white/10">
             <div class="text-[10px] font-bold ${colorHeader} mb-1.5 flex justify-between items-center">
               <span>${m.name}</span>
-              <span class="opacity-70 font-mono text-[9px]">наценка ×${mult}</span>
+              <span class="opacity-70 font-mono text-[9px]">наценка ×${mult}${selectedComplexityMarkup > 0 ? ` (+${selectedComplexityMarkup}%)` : ''}</span>
             </div>
             <div class="grid grid-cols-2 gap-1.5">
         `;
@@ -3057,7 +3309,8 @@
           }
 
           const totCost = bCost + petCost + coverCost + accessoriesCost + stickerCost + workCost + (expensesCost || 0) + aramidExtra;
-          const raw = totCost * mult;
+          const complexityFactor = 1.0 + (selectedComplexityMarkup / 100.0);
+          const raw = totCost * mult * complexityFactor;
           // Exact same rounding as calculateNow to prevent price jumping!
           const price = raw > 0 ? Math.ceil(Math.round(raw * 10000) / 10000 / 100) * 100 : 0;
 
@@ -3219,10 +3472,12 @@ function getCurrentUserIdentifier() {
       const aramidMult = isStandardPreset ? (aramidMat.default_multiplier || appSettings.general.aramid_default_multiplier || 2.625) : customMarkupVal;
 
       const commonOtherCost = petCost + coverCost + extraCoversCost + accCost + expCost + stCost + workCost;
+      const complexityFactor = 1.0 + (selectedComplexityMarkup / 100.0);
 
       const getSvmpP = (l) => {
         const t = (singleArea * l * svmpPrice) + commonOtherCost;
-        return t > 0 ? Math.ceil(Math.round(t * svmpMult * 10000) / 10000 / 100) * 100 : 0;
+        const raw = t * svmpMult * complexityFactor;
+        return raw > 0 ? Math.ceil(Math.round(raw * 10000) / 10000 / 100) * 100 : 0;
       };
 
       const papCost = (document.getElementById("include_aramid_paper") && document.getElementById("include_aramid_paper").checked) ? singleArea * (appSettings.general.aramid_paper_price_per_m2 || 38.46) : 0;
@@ -3230,7 +3485,8 @@ function getCurrentUserIdentifier() {
 
       const getAramidP = (l) => {
         const t = (singleArea * l * aramidPrice) + commonOtherCost + papCost + edgCost;
-        return t > 0 ? Math.ceil(Math.round(t * aramidMult * 10000) / 10000 / 100) * 100 : 0;
+        const raw = t * aramidMult * complexityFactor;
+        return raw > 0 ? Math.ceil(Math.round(raw * 10000) / 10000 / 100) * 100 : 0;
       };
 
       function getLayerDesc(isAr, l) {
@@ -3253,10 +3509,12 @@ function getCurrentUserIdentifier() {
       const aramidLayers = getAllowedLayers(aramidMat.name);
       const aramidLines = aramidLayers.map(l => `  • ${l} слоёв${getLayerDesc(true, l)} — ${getAramidP(l).toLocaleString("ru-RU")} ₽`).join("\n");
 
+      const complexityStr = selectedComplexityMarkup > 0 ? `\nСложность конструкции: +${selectedComplexityMarkup}% (${getComplexityTitle(selectedComplexityMarkup)})` : "";
+
       const text = `📋 КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ / РАСЧЁТ ЦЕН
 Изделие: ${prodName}${codeStr}
 Детали кроя:
-${partsStr}
+${partsStr}${complexityStr}
 
 Материал: СВМПэ (баллистический полиэтилен):
 ${svmpLines}
@@ -3338,6 +3596,7 @@ ${aramidLines}
         work_price_per_part: document.getElementById("work_price_per_part").value,
         include_aramid_paper: document.getElementById("include_aramid_paper") ? document.getElementById("include_aramid_paper").checked : false,
         include_aramid_edging: document.getElementById("include_aramid_edging") ? document.getElementById("include_aramid_edging").checked : false,
+        complexity_markup_pct: selectedComplexityMarkup,
         total_cost: lastCalculated ? lastCalculated.totalCost : 0,
         sale_price: lastCalculated ? lastCalculated.salePrice : 0,
         author: author
@@ -3420,7 +3679,8 @@ ${aramidLines}
           const matchCost = (item.total_cost || "").toString().includes(query);
           const matchPrice = (item.sale_price || "").toString().includes(query);
           const matchAuthor = (item.author || "").toLowerCase().includes(query);
-          return matchName || matchCode || matchMat || matchParts || matchCover || matchDate || matchCost || matchPrice || matchAuthor;
+          const matchComplexity = item.complexity_markup_pct ? `+${item.complexity_markup_pct}%`.includes(query) : false;
+          return matchName || matchCode || matchMat || matchParts || matchCover || matchDate || matchCost || matchPrice || matchAuthor || matchComplexity;
         }
         return true;
       });
@@ -3465,12 +3725,16 @@ ${aramidLines}
           day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"
         }) : "—";
 
+        const complPct = item.complexity_markup_pct ? Number(item.complexity_markup_pct) : 0;
+        const complBadge = complPct > 0 ? `<span class="ml-1 text-[10px] px-1.5 py-0.5 rounded font-bold ${complPct === 15 ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : (complPct === 10 ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30')}" title="Наценка за сложность конструкции">+${complPct}% сложн.</span>` : "";
+
         row.innerHTML = `
           <td class="py-3 px-4 text-muted font-mono">#${item.id}</td>
           <td class="py-3 px-4 text-muted whitespace-nowrap font-mono">${dateStr}</td>
           <td class="py-3 px-4 font-medium text-main">
             ${item.product_name}
             ${item.product_code ? `<span class="ml-1 text-[11px] px-1.5 py-0.5 rounded bg-black/20 text-muted font-mono">${item.product_code}</span>` : ""}
+            ${complBadge}
             ${item.author ? `<span class="block text-[10px] text-muted opacity-80"><i class="fa-solid fa-user text-[9px] mr-1"></i>${item.author}</span>` : ""}
           </td>
           <td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-[11px] font-semibold ${item.material === 'СВМПэ' ? 'bg-theme-light text-theme-dark border border-theme' : 'bg-amber-950/40 text-amber-300 border border-amber-800'}">${item.material}</span></td>
@@ -3561,6 +3825,8 @@ ${aramidLines}
         if (parsed.length > 0) parts = parsed;
       }
       renderParts();
+      const complexity = (item.complexity_markup_pct !== undefined && item.complexity_markup_pct !== null) ? Number(item.complexity_markup_pct) : 0;
+      setComplexityMarkup(complexity);
       calculateNow();
       switchTab("calculator");
       showToast(`Загружен расчет #${id} (${item.product_name})`);
@@ -3624,9 +3890,10 @@ ${aramidLines}
         showToast("История пуста для экспорта", true);
         return;
       }
-      let csv = "ID;Дата;Изделие;Код;Материал;Слои;Детали;Чехол;Себестоимость (руб);Продажная цена (руб)\n";
+      let csv = "ID;Дата;Изделие;Код;Сложность;Материал;Слои;Детали;Чехол;Себестоимость (руб);Продажная цена (руб)\n";
       list.forEach(item => {
-        csv += `${item.id};"${csvEscape(item.created_at)}";"${csvEscape(item.product_name)}";"${csvEscape(item.product_code)}";"${csvEscape(item.material)}";${item.layers || 0};"${csvEscape(item.parts_summary)}";"${csvEscape(item.cover_material)}";${item.total_cost || 0};${item.sale_price || 0}\n`;
+        const complStr = item.complexity_markup_pct ? `+${item.complexity_markup_pct}%` : "0%";
+        csv += `${item.id};"${csvEscape(item.created_at)}";"${csvEscape(item.product_name)}";"${csvEscape(item.product_code)}";"${complStr}";"${csvEscape(item.material)}";${item.layers || 0};"${csvEscape(item.parts_summary)}";"${csvEscape(item.cover_material)}";${item.total_cost || 0};${item.sale_price || 0}\n`;
       });
 
       const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
@@ -3649,6 +3916,7 @@ ${aramidLines}
       extraCovers = [];
       accessories = [];
       expenses = [];
+      setComplexityMarkup(0);
       renderParts();
       renderExtraCovers();
       renderAccessories();
@@ -3674,6 +3942,7 @@ ${aramidLines}
       extraCovers = [];
       accessories = [];
       expenses = [];
+      setComplexityMarkup(0);
       renderParts();
       renderExtraCovers();
       renderAccessories();
@@ -4355,7 +4624,8 @@ ${aramidLines}
             }
           }
           const totalCost = bCost + commonBaseCost + aramidExtra;
-          const rawSale = totalCost * mult;
+          const complexityFactor = 1.0 + (selectedComplexityMarkup / 100.0);
+          const rawSale = totalCost * mult * complexityFactor;
           const salePrice = rawSale > 0 ? Math.ceil(Math.round(rawSale * 10000) / 10000 / 100) * 100 : 0;
 
           const newItem = {
@@ -4377,6 +4647,7 @@ ${aramidLines}
             sticker_qty: stickerQty,
             custom_markup: customMarkupInput,
             work_price_per_part: workRate,
+            complexity_markup_pct: selectedComplexityMarkup,
             include_aramid_paper: isAramid && document.getElementById("include_aramid_paper") && document.getElementById("include_aramid_paper").checked,
             include_aramid_edging: isAramid && document.getElementById("include_aramid_edging") && document.getElementById("include_aramid_edging").checked,
             total_cost: parseFloat(totalCost.toFixed(2)),
@@ -5120,6 +5391,7 @@ ${aramidLines}
           cover_summary: (r.cover_material || "") + (r.extra_covers && r.extra_covers.length ? ' + ' + r.extra_covers.map(e => e.fabric_name || e.name || e.material || "").join(', ') : ''),
           accessories_summary: (() => {
             const parts = [];
+            if (r.complexity_markup_pct) parts.push(`Сложность: +${r.complexity_markup_pct}%`);
             if (r.accessories && r.accessories.length) parts.push(r.accessories.map(a => `${a.name} (${a.qty} ${a.unit})`).join(', '));
             else if (r.accessories_summary) parts.push(r.accessories_summary);
             if (r.expenses && r.expenses.length) parts.push('Доп: ' + r.expenses.map(e => `${e.name} (${e.qty} ${e.unit || 'руб'} × ${e.price} ₽)`).join(', '));
