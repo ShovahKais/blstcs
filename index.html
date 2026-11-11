@@ -1627,7 +1627,7 @@
                 <h3 class="text-sm sm:text-base font-bold text-main">Мастер поэтапного расчета</h3>
                 <span id="wizard-step-badge" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-theme-light text-theme-dark border border-theme/30">Шаг 1 из 7</span>
               </div>
-              <p id="wizard-step-subtitle" class="text-xs text-muted">Параметры изделия и выбор шаблона</p>
+              <p id="wizard-step-subtitle" class="text-xs text-muted">Наименование и артикул изделия</p>
             </div>
           </div>
           <button type="button" onclick="closeWizardModal()" class="p-2 text-muted hover:text-main rounded-xl hover:bg-theme-light/20 transition cursor-pointer" title="Закрыть мастер">
@@ -4837,7 +4837,7 @@ ${aramidLines}
 
     // ================= STEP-BY-STEP CALCULATION WIZARD MODULE =================
     const WIZARD_STEPS = [
-      { num: 1, title: "Изделие", subtitle: "Параметры изделия и выбор шаблона", icon: "fa-layer-group" },
+      { num: 1, title: "Изделие", subtitle: "Наименование и артикул изделия", icon: "fa-layer-group" },
       { num: 2, title: "Детали кроя", subtitle: "Габариты, количество и периметр", icon: "fa-shapes" },
       { num: 3, title: "Баллистика", subtitle: "Материал пакета и число слоёв", icon: "fa-shield-halved" },
       { num: 4, title: "Чехол и защита", subtitle: "Основной чехол, ПЭТ и доп. ткани", icon: "fa-vest" },
@@ -4849,7 +4849,7 @@ ${aramidLines}
     let wizardState = {
       step: 1,
       maxStepReached: 1,
-      product_name: "Баллистический пакет",
+      product_name: "",
       product_code: "",
       template_id: "",
       material: "СВМПэ",
@@ -4929,6 +4929,18 @@ ${aramidLines}
     }
 
     function validateWizardStep(currentStep) {
+      if (currentStep === 1) {
+        const name = (wizardState.product_name || "").trim();
+        if (!name) {
+          showToast("Введите наименование изделия для перехода к следующему шагу", true);
+          const nameInput = document.getElementById("wiz_product_name");
+          if (nameInput) {
+            nameInput.focus();
+            nameInput.classList.add("ring-2", "ring-rose-500", "border-rose-500");
+          }
+          return false;
+        }
+      }
       if (currentStep === 2) {
         if (!wizardState.parts || wizardState.parts.length === 0) {
           showToast("Добавьте хотя бы одну деталь кроя", true);
@@ -4964,7 +4976,7 @@ ${aramidLines}
       wizardState = {
         step: 1,
         maxStepReached: 1,
-        product_name: "Баллистический пакет",
+        product_name: "",
         product_code: "",
         template_id: "",
         material: "СВМПэ",
@@ -5198,6 +5210,17 @@ ${aramidLines}
         }
       }
 
+      const btnNext = document.getElementById("wizard-btn-next");
+      if (btnNext) {
+        if (wizardState.step === 1 && !(wizardState.product_name || "").trim()) {
+          btnNext.classList.add("opacity-50", "cursor-not-allowed");
+          btnNext.title = "Сначала введите наименование изделия";
+        } else {
+          btnNext.classList.remove("opacity-50", "cursor-not-allowed");
+          btnNext.title = "";
+        }
+      }
+
       if (footerSummary) {
         let areaCm2 = 0;
         let count = 0;
@@ -5229,81 +5252,57 @@ ${aramidLines}
       }
     }
 
-    // --- STEP 1: PRODUCT & TEMPLATES ---
+    // --- STEP 1: PRODUCT INFO ---
     function renderWizardStep1(container) {
+      const hasName = (wizardState.product_name || "").trim().length > 0;
       container.innerHTML = `
         <div class="space-y-4">
           <div class="bg-theme-light/10 p-3.5 rounded-xl border border-card flex items-start gap-2.5">
             <i class="fa-solid fa-circle-info text-theme text-sm mt-0.5"></i>
             <div class="text-xs text-muted leading-relaxed">
-              <strong class="text-main">Шаг 1:</strong> Укажите наименование и код изделия, либо выберите один из типовых шаблонов для быстрого заполнения размеров и слоёв.
+              <strong class="text-main">Шаг 1:</strong> Укажите наименование изделия (обязательное поле для перехода далее) и артикул/код партии.
             </div>
           </div>
 
-          <div>
-            <label class="block text-xs font-semibold text-main mb-2 flex items-center gap-1.5">
-              <i class="fa-solid fa-bookmark text-theme"></i> Быстрый старт по шаблону:
-            </label>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <button type="button" onclick="selectWizardTemplate('tpl_1')" class="p-3 text-left rounded-xl border border-card hover:border-theme bg-theme-light/5 hover:bg-theme-light/15 transition cursor-pointer flex items-center justify-between">
-                <div>
-                  <div class="text-xs font-bold text-main">Напашник Капля</div>
-                  <div class="text-[11px] text-muted">25×20 см, СВМПэ 25 сл.</div>
-                </div>
-                <span class="text-[11px] px-2 py-0.5 rounded font-mono font-bold bg-theme-light text-theme-dark">909С</span>
-              </button>
-
-              <button type="button" onclick="selectWizardTemplate('tpl_2')" class="p-3 text-left rounded-xl border border-card hover:border-theme bg-theme-light/5 hover:bg-theme-light/15 transition cursor-pointer flex items-center justify-between">
-                <div>
-                  <div class="text-xs font-bold text-main">Защита шеи Воротъ</div>
-                  <div class="text-[11px] text-muted">2 детали: 30×15 и 32×18 см</div>
-                </div>
-                <span class="text-[11px] px-2 py-0.5 rounded font-mono font-bold bg-theme-light text-theme-dark">822</span>
-              </button>
-
-              <button type="button" onclick="selectWizardTemplate('tpl_3')" class="p-3 text-left rounded-xl border border-card hover:border-theme bg-theme-light/5 hover:bg-theme-light/15 transition cursor-pointer flex items-center justify-between">
-                <div>
-                  <div class="text-xs font-bold text-main">Корсет Перко</div>
-                  <div class="text-[11px] text-muted">40×18 см (2 шт), СВМПэ 25 сл.</div>
-                </div>
-                <span class="text-[11px] px-2 py-0.5 rounded font-mono font-bold bg-theme-light text-theme-dark">833-1С</span>
-              </button>
-
-              <button type="button" onclick="importFromMainCalculatorToWizard(); renderWizard();" class="p-3 text-left rounded-xl border border-card hover:border-theme bg-theme-light/5 hover:bg-theme-light/15 transition cursor-pointer flex items-center justify-between">
-                <div>
-                  <div class="text-xs font-bold text-main">Взять из калькулятора</div>
-                  <div class="text-[11px] text-muted">Скопировать текущие детали и чехол</div>
-                </div>
-                <i class="fa-solid fa-cloud-arrow-down text-theme"></i>
-              </button>
-            </div>
-          </div>
-
-          <div class="pt-2 border-t border-card grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div class="space-y-4 pt-1">
             <div>
-              <label class="block text-xs font-semibold text-main mb-1.5">Наименование изделия</label>
-              <input type="text" id="wiz_product_name" value="${wizardState.product_name || ''}" oninput="wizardState.product_name = this.value" placeholder="Например, Напашник Капля" class="input-theme w-full text-sm rounded-xl p-2.5">
+              <label class="block text-xs font-semibold text-main mb-1.5 flex items-center justify-between">
+                <span>Наименование изделия <span class="text-rose-400 font-bold">*</span></span>
+                <span id="wiz-name-hint" class="text-[11px] text-rose-400 font-normal ${hasName ? 'hidden' : ''}">Обязательно для перехода к шагу 2</span>
+              </label>
+              <input type="text" id="wiz_product_name" value="${wizardState.product_name || ''}" oninput="onWizardNameInput(this)" placeholder="Например, Напашник Капля, Защита шеи Воротъ, Корсет Перко..." class="input-theme w-full text-sm rounded-xl p-3 font-medium">
             </div>
+
             <div>
-              <label class="block text-xs font-semibold text-main mb-1.5">Код / Артикул партии</label>
-              <input type="text" id="wiz_product_code" value="${wizardState.product_code || ''}" oninput="wizardState.product_code = this.value" placeholder="Например, 909С" class="input-theme w-full text-sm rounded-xl p-2.5 font-mono">
+              <label class="block text-xs font-semibold text-main mb-1.5 flex items-center justify-between">
+                <span>Код / Артикул партии <span class="text-muted font-normal">(необязательно)</span></span>
+              </label>
+              <input type="text" id="wiz_product_code" value="${wizardState.product_code || ''}" oninput="wizardState.product_code = this.value.trim()" placeholder="Например, 909С, 822..." class="input-theme w-full text-sm rounded-xl p-3 font-mono">
             </div>
           </div>
         </div>
       `;
     }
 
-    function selectWizardTemplate(tplKey) {
-      if (!TEMPLATES[tplKey]) return;
-      const t = TEMPLATES[tplKey];
-      wizardState.product_name = t.name;
-      wizardState.product_code = t.code;
-      wizardState.material = t.material || "СВМПэ";
-      wizardState.layers = t.layers || 25;
-      wizardState.parts = JSON.parse(JSON.stringify(t.parts));
-      wizardState.template_id = tplKey;
-      renderWizard();
-      showToast(`Применен шаблон «${t.name}»`);
+    function onWizardNameInput(input) {
+      wizardState.product_name = input.value;
+      const hasName = (input.value || "").trim().length > 0;
+      input.classList.remove("ring-2", "ring-rose-500", "border-rose-500");
+      const hint = document.getElementById("wiz-name-hint");
+      if (hint) {
+        if (hasName) hint.classList.add("hidden");
+        else hint.classList.remove("hidden");
+      }
+      const btnNext = document.getElementById("wizard-btn-next");
+      if (btnNext && wizardState.step === 1) {
+        if (!hasName) {
+          btnNext.classList.add("opacity-50", "cursor-not-allowed");
+          btnNext.title = "Сначала введите наименование изделия";
+        } else {
+          btnNext.classList.remove("opacity-50", "cursor-not-allowed");
+          btnNext.title = "";
+        }
+      }
     }
 
     // --- STEP 2: CUTTING DETAILS (PARTS) ---
