@@ -988,6 +988,8 @@
               <option value="cost_desc">Себестоимость: по убыванию</option>
               <option value="cost_asc">Себестоимость: по возрастанию</option>
               <option value="name_asc">Название (А-Я)</option>
+              <option value="author_asc">Автор (А-Я)</option>
+              <option value="author_desc">Автор (Я-А)</option>
             </select>
           </div>
 
@@ -1005,10 +1007,13 @@
             <thead class="bg-theme-light/20 text-muted border-b border-card">
               <tr>
                 <th class="py-3 px-4">#</th>
-                <th class="py-3 px-4 cursor-pointer hover:text-main" onclick="cycleHistorySort('date')">
+                <th class="py-3 px-4 cursor-pointer hover:text-main whitespace-nowrap" onclick="cycleHistorySort('date')">
                   Дата / Время <i class="fa-solid fa-sort text-[10px] ml-1"></i>
                 </th>
-                <th class="py-3 px-4 cursor-pointer hover:text-main" onclick="cycleHistorySort('name')">
+                <th class="py-3 px-4 cursor-pointer hover:text-main whitespace-nowrap" onclick="cycleHistorySort('author')">
+                  Автор <i class="fa-solid fa-sort text-[10px] ml-1"></i>
+                </th>
+                <th class="py-3 px-4 cursor-pointer hover:text-main whitespace-nowrap" onclick="cycleHistorySort('name')">
                   Изделие / Код <i class="fa-solid fa-sort text-[10px] ml-1"></i>
                 </th>
                 <th class="py-3 px-4">Материал</th>
@@ -3491,18 +3496,21 @@
     }
 
 function getCurrentUserIdentifier() {
-      const sessionStr = sessionStorage.getItem(ACTIVE_SESSION_KEY);
-      if (sessionStr) {
-        try {
+      try {
+        const sessionStr = sessionStorage.getItem(ACTIVE_SESSION_KEY);
+        if (sessionStr) {
           const s = JSON.parse(sessionStr);
-          if (s && s.user) return s.user;
-        } catch(e) {}
-      }
-      const sec = appSettings.security || DEFAULT_SETTINGS.security;
-      if (sec && sec.site_login) return sec.site_login;
+          if (s && s.user && s.user.trim()) return s.user.trim();
+          if (s && s.login && s.login.trim()) return s.login.trim();
+        }
+      } catch(e) {}
+      const lastUser = localStorage.getItem("blstcs_last_user");
+      if (lastUser && lastUser.trim()) return lastUser.trim();
+      const sec = appSettings.security || (typeof DEFAULT_SETTINGS !== "undefined" ? DEFAULT_SETTINGS.security : null);
+      if (sec && sec.site_login && sec.site_login.trim()) return sec.site_login.trim();
       const author = (appSettings.cloud_sync && appSettings.cloud_sync.author);
-      if (author) return author;
-      return "Пользователь";
+      if (author && author.trim()) return author.trim();
+      return "user";
     }
 
     function copyCommercialProposal() {
@@ -3764,6 +3772,8 @@ ${aramidLines}
       const current = sortSelect.value;
       if (field === 'date') {
         sortSelect.value = current === 'date_desc' ? 'date_asc' : 'date_desc';
+      } else if (field === 'author') {
+        sortSelect.value = current === 'author_asc' ? 'author_desc' : 'author_asc';
       } else if (field === 'price') {
         sortSelect.value = current === 'price_desc' ? 'price_asc' : 'price_desc';
       } else if (field === 'cost') {
@@ -3815,6 +3825,8 @@ ${aramidLines}
           case "cost_desc": return (b.total_cost || 0) - (a.total_cost || 0);
           case "cost_asc": return (a.total_cost || 0) - (b.total_cost || 0);
           case "name_asc": return (a.product_name || "").localeCompare(b.product_name || "");
+          case "author_asc": return (a.author || "").localeCompare(b.author || "");
+          case "author_desc": return (b.author || "").localeCompare(a.author || "");
           default: return (b.id || 0) - (a.id || 0);
         }
       });
@@ -3831,7 +3843,7 @@ ${aramidLines}
       if (filtered.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="10" class="py-8 text-center text-muted text-xs">
+            <td colspan="11" class="py-8 text-center text-muted text-xs">
               ${query ? `По запросу «${query}» ничего не найдено. <button onclick="clearHistorySearch()" class="text-theme underline ml-1">Сбросить поиск</button>` : 'История пуста. Произведите расчет и нажмите «Сохранить расчет в историю».'}
             </td>
           </tr>
@@ -3849,14 +3861,22 @@ ${aramidLines}
         const complPct = item.complexity_markup_pct ? Number(item.complexity_markup_pct) : 0;
         const complBadge = complPct > 0 ? `<span class="ml-1 text-[10px] px-1.5 py-0.5 rounded font-bold ${complPct === 15 ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : (complPct === 10 ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30')}" title="Наценка за сложность конструкции">+${complPct}% сложн.</span>` : "";
 
+        const itemAuthor = (item.author && item.author.trim()) ? item.author.trim() : (getCurrentUserIdentifier() || "user");
+        const isAdminAuthor = itemAuthor.toLowerCase() === 'admin';
+
         row.innerHTML = `
           <td class="py-3 px-4 text-muted font-mono">#${item.id}</td>
           <td class="py-3 px-4 text-muted whitespace-nowrap font-mono">${dateStr}</td>
+          <td class="py-3 px-4 whitespace-nowrap">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold ${isAdminAuthor ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30' : 'bg-theme-light text-theme-dark border border-theme/30'}" title="Сотрудник, выполнивший расчет: ${itemAuthor}">
+              <i class="fa-solid fa-user text-[10px] opacity-70"></i>
+              <span>${itemAuthor}</span>
+            </span>
+          </td>
           <td class="py-3 px-4 font-medium text-main">
             ${item.product_name}
             ${item.product_code ? `<span class="ml-1 text-[11px] px-1.5 py-0.5 rounded bg-black/20 text-muted font-mono">${item.product_code}</span>` : ""}
             ${complBadge}
-            ${item.author ? `<span class="block text-[10px] text-muted opacity-80"><i class="fa-solid fa-user text-[9px] mr-1"></i>${item.author}</span>` : ""}
           </td>
           <td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-[11px] font-semibold ${item.material === 'СВМПэ' ? 'bg-theme-light text-theme-dark border border-theme' : 'bg-amber-950/40 text-amber-300 border border-amber-800'}">${item.material}</span></td>
           <td class="py-3 px-4 font-semibold text-main font-mono">${item.layers}</td>
@@ -4011,10 +4031,11 @@ ${aramidLines}
         showToast("История пуста для экспорта", true);
         return;
       }
-      let csv = "ID;Дата;Изделие;Код;Сложность;Материал;Слои;Детали;Чехол;Себестоимость (руб);Продажная цена (руб)\n";
+      let csv = "ID;Дата;Автор;Изделие;Код;Сложность;Материал;Слои;Детали;Чехол;Себестоимость (руб);Продажная цена (руб)\n";
       list.forEach(item => {
         const complStr = item.complexity_markup_pct ? `+${item.complexity_markup_pct}%` : "0%";
-        csv += `${item.id};"${csvEscape(item.created_at)}";"${csvEscape(item.product_name)}";"${csvEscape(item.product_code)}";"${complStr}";"${csvEscape(item.material)}";${item.layers || 0};"${csvEscape(item.parts_summary)}";"${csvEscape(item.cover_material)}";${item.total_cost || 0};${item.sale_price || 0}\n`;
+        const itemAuthor = item.author || getCurrentUserIdentifier() || "";
+        csv += `${item.id};"${csvEscape(item.created_at)}";"${csvEscape(itemAuthor)}";"${csvEscape(item.product_name)}";"${csvEscape(item.product_code)}";"${complStr}";"${csvEscape(item.material)}";${item.layers || 0};"${csvEscape(item.parts_summary)}";"${csvEscape(item.cover_material)}";${item.total_cost || 0};${item.sale_price || 0}\n`;
       });
 
       const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
@@ -4435,6 +4456,7 @@ ${aramidLines}
         area: parseFloat(area.toFixed(4)),
         perimeter: parseFloat(perimeter.toFixed(4)),
         outUnit: outUnit,
+        author: getCurrentUserIdentifier(),
         date: new Date().toLocaleString('ru-RU', { 
           day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' 
         })
@@ -6361,6 +6383,7 @@ ${aramidLines}
         isAdminUnlocked = true;
         const sessionData = JSON.stringify({ token: "ok", user: userVal, is_admin: true, expires_at: Date.now() + 12 * 60 * 60 * 1000 });
         sessionStorage.setItem(ACTIVE_SESSION_KEY, sessionData);
+        localStorage.setItem("blstcs_last_user", userVal);
 
         hideAuthModal();
         populateAdminFields();
@@ -6380,6 +6403,7 @@ ${aramidLines}
         isAdminUnlocked = false;
         const sessionData = JSON.stringify({ token: "ok", user: userVal, is_admin: false, expires_at: Date.now() + 12 * 60 * 60 * 1000 });
         sessionStorage.setItem(ACTIVE_SESSION_KEY, sessionData);
+        localStorage.setItem("blstcs_last_user", userVal);
 
         hideAuthModal();
         lockAdminSection();
@@ -6861,7 +6885,7 @@ ${aramidLines}
           sale_price: r.sale_price || 0,
           profit: r.profit || ((r.sale_price && r.total_cost) ? Math.round(r.sale_price - r.total_cost) : 0),
           weight: r.weight || 0,
-          author: authorName,
+          author: (r.author && r.author.trim()) ? r.author.trim() : (getCurrentUserIdentifier() || authorName),
           parts_summary: r.parts_summary || ""
         }))
       };
