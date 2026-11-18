@@ -988,8 +988,8 @@
               <option value="cost_desc">Себестоимость: по убыванию</option>
               <option value="cost_asc">Себестоимость: по возрастанию</option>
               <option value="name_asc">Название (А-Я)</option>
-              <option value="author_asc">Автор (А-Я)</option>
-              <option value="author_desc">Автор (Я-А)</option>
+              <option value="author_asc">Логин автора (А-Я)</option>
+              <option value="author_desc">Логин автора (Я-А)</option>
             </select>
           </div>
 
@@ -1011,7 +1011,7 @@
                   Дата / Время <i class="fa-solid fa-sort text-[10px] ml-1"></i>
                 </th>
                 <th class="py-3 px-4 cursor-pointer hover:text-main whitespace-nowrap" onclick="cycleHistorySort('author')">
-                  Автор <i class="fa-solid fa-sort text-[10px] ml-1"></i>
+                  Логин автора <i class="fa-solid fa-sort text-[10px] ml-1"></i>
                 </th>
                 <th class="py-3 px-4 cursor-pointer hover:text-main whitespace-nowrap" onclick="cycleHistorySort('name')">
                   Изделие / Код <i class="fa-solid fa-sort text-[10px] ml-1"></i>
@@ -1338,8 +1338,8 @@
 
                   <div class="grid grid-cols-2 gap-3">
                     <div>
-                      <label class="block text-muted font-medium mb-1">Имя автора / устройства:</label>
-                      <input type="text" id="setting_gspread_author" class="input-theme w-full rounded-xl px-3 py-2 text-xs outline-none" placeholder="Менеджер 1">
+                      <label class="block text-muted font-medium mb-1">Логин автора (аккаунт):</label>
+                      <input type="text" id="setting_gspread_author" class="input-theme w-full rounded-xl px-3 py-2 text-xs outline-none" placeholder="Логин (например, admin или user)">
                     </div>
                     <div>
                       <label class="block text-muted font-medium mb-1">Имя листа в таблице:</label>
@@ -1788,7 +1788,7 @@
       },
       cloud_sync: {
         url: "https://script.google.com/macros/s/AKfycbxGn3R0uG1EJdR3lWs_zJrjhxk_v4SDr_sGdHiOGk-6Q5jJM5M8gEa0FFejOobHnQAN/exec",
-        author: "Рабочее место",
+        author: "user",
         auto_save: true,
         auto_sync: true
       },
@@ -2453,7 +2453,7 @@
       const gUrlInput = document.getElementById("setting_gspread_url");
       if (gUrlInput) appSettings.cloud_sync.url = gUrlInput.value.trim();
       const gAuthInput = document.getElementById("setting_gspread_author");
-      if (gAuthInput) appSettings.cloud_sync.author = gAuthInput.value.trim() || "Рабочее место";
+      if (gAuthInput) appSettings.cloud_sync.author = gAuthInput.value.trim() || getCurrentUserLogin();
       const gAutoSave = document.getElementById("setting_gspread_autosave");
       if (gAutoSave) appSettings.cloud_sync.auto_save = gAutoSave.checked;
       const gAutoSync = document.getElementById("setting_gspread_autosync");
@@ -3681,7 +3681,24 @@ ${aramidLines}
     function getHistoryList() {
       const saved = localStorage.getItem("ballistics_history");
       if (saved) {
-        try { return JSON.parse(saved); } catch (e) {}
+        try {
+          const list = JSON.parse(saved);
+          if (Array.isArray(list)) {
+            let changed = false;
+            const currentLogin = (typeof getCurrentUserIdentifier === "function") ? getCurrentUserIdentifier() : "user";
+            list.forEach(item => {
+              const a = (item.author || "").trim().toLowerCase();
+              if (!a || a === "рабочее место" || a === "пользователь" || a === "менеджер 1" || a === "google таблица" || a === "без автора") {
+                item.author = currentLogin;
+                changed = true;
+              }
+            });
+            if (changed) {
+              localStorage.setItem("ballistics_history", JSON.stringify(list));
+            }
+            return list;
+          }
+        } catch (e) {}
       }
       return [];
     }
@@ -3861,7 +3878,11 @@ ${aramidLines}
         const complPct = item.complexity_markup_pct ? Number(item.complexity_markup_pct) : 0;
         const complBadge = complPct > 0 ? `<span class="ml-1 text-[10px] px-1.5 py-0.5 rounded font-bold ${complPct === 15 ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : (complPct === 10 ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30')}" title="Наценка за сложность конструкции">+${complPct}% сложн.</span>` : "";
 
-        const itemAuthor = (item.author && item.author.trim()) ? item.author.trim() : (getCurrentUserIdentifier() || "user");
+        let rawAuthor = (item.author && item.author.trim()) ? item.author.trim() : "";
+        if (!rawAuthor || ["рабочее место", "пользователь", "менеджер 1", "google таблица", "без автора"].includes(rawAuthor.toLowerCase())) {
+          rawAuthor = getCurrentUserIdentifier() || "user";
+        }
+        const itemAuthor = rawAuthor;
         const isAdminAuthor = itemAuthor.toLowerCase() === 'admin';
 
         row.innerHTML = `
@@ -4031,7 +4052,7 @@ ${aramidLines}
         showToast("История пуста для экспорта", true);
         return;
       }
-      let csv = "ID;Дата;Автор;Изделие;Код;Сложность;Материал;Слои;Детали;Чехол;Себестоимость (руб);Продажная цена (руб)\n";
+      let csv = "ID;Дата;Логин автора;Изделие;Код;Сложность;Материал;Слои;Детали;Чехол;Себестоимость (руб);Продажная цена (руб)\n";
       list.forEach(item => {
         const complStr = item.complexity_markup_pct ? `+${item.complexity_markup_pct}%` : "0%";
         const itemAuthor = item.author || getCurrentUserIdentifier() || "";
@@ -4134,7 +4155,7 @@ ${aramidLines}
         document.getElementById("setting_gspread_url").value = (appSettings.cloud_sync && appSettings.cloud_sync.url) || "";
       }
       if (document.getElementById("setting_gspread_author")) {
-        document.getElementById("setting_gspread_author").value = (appSettings.cloud_sync && appSettings.cloud_sync.author) || "Рабочее место";
+        document.getElementById("setting_gspread_author").value = getCurrentUserLogin();
       }
       if (document.getElementById("setting_gspread_autosave")) {
         document.getElementById("setting_gspread_autosave").checked = (appSettings.cloud_sync && appSettings.cloud_sync.auto_save !== undefined) ? appSettings.cloud_sync.auto_save : true;
@@ -4290,7 +4311,7 @@ ${aramidLines}
         document.getElementById("setting_gspread_url").value = (appSettings.cloud_sync && appSettings.cloud_sync.url) || "";
       }
       if (document.getElementById("setting_gspread_author")) {
-        document.getElementById("setting_gspread_author").value = (appSettings.cloud_sync && appSettings.cloud_sync.author) || "Рабочее место";
+        document.getElementById("setting_gspread_author").value = getCurrentUserLogin();
       }
       if (document.getElementById("setting_gspread_autosave")) {
         document.getElementById("setting_gspread_autosave").checked = (appSettings.cloud_sync && appSettings.cloud_sync.auto_save !== undefined) ? appSettings.cloud_sync.auto_save : true;
@@ -6384,6 +6405,10 @@ ${aramidLines}
         const sessionData = JSON.stringify({ token: "ok", user: userVal, is_admin: true, expires_at: Date.now() + 12 * 60 * 60 * 1000 });
         sessionStorage.setItem(ACTIVE_SESSION_KEY, sessionData);
         localStorage.setItem("blstcs_last_user", userVal);
+        if (appSettings && appSettings.cloud_sync) {
+          appSettings.cloud_sync.author = userVal;
+          try { localStorage.setItem("ballistics_settings", JSON.stringify(appSettings)); } catch(e) {}
+        }
 
         hideAuthModal();
         populateAdminFields();
@@ -6404,6 +6429,10 @@ ${aramidLines}
         const sessionData = JSON.stringify({ token: "ok", user: userVal, is_admin: false, expires_at: Date.now() + 12 * 60 * 60 * 1000 });
         sessionStorage.setItem(ACTIVE_SESSION_KEY, sessionData);
         localStorage.setItem("blstcs_last_user", userVal);
+        if (appSettings && appSettings.cloud_sync) {
+          appSettings.cloud_sync.author = userVal;
+          try { localStorage.setItem("ballistics_settings", JSON.stringify(appSettings)); } catch(e) {}
+        }
 
         hideAuthModal();
         lockAdminSection();
@@ -6617,7 +6646,7 @@ ${aramidLines}
         document.getElementById("setting_gspread_url").value = cloud.url || "";
       }
       if (document.getElementById("setting_gspread_author")) {
-        document.getElementById("setting_gspread_author").value = cloud.author || "Рабочее место";
+        document.getElementById("setting_gspread_author").value = getCurrentUserLogin();
       }
       if (document.getElementById("setting_gspread_autosave")) {
         document.getElementById("setting_gspread_autosave").checked = (cloud.auto_save !== undefined) ? cloud.auto_save : true;
@@ -6857,10 +6886,10 @@ ${aramidLines}
       const url = (appSettings.cloud_sync && appSettings.cloud_sync.url) ? appSettings.cloud_sync.url.trim() : "";
       if (!url || !records || records.length === 0) return Promise.resolve({ ok: false });
 
-      const authorName = (appSettings.cloud_sync && appSettings.cloud_sync.author) || "Пользователь";
+      const authorLogin = getCurrentUserIdentifier();
       const payload = {
         action: "save_history",
-        device_name: authorName,
+        device_name: authorLogin,
         records: records.map(r => ({
           id: r.id || Date.now(),
           created_at: r.created_at || new Date().toLocaleString("ru-RU"),
@@ -6885,7 +6914,7 @@ ${aramidLines}
           sale_price: r.sale_price || 0,
           profit: r.profit || ((r.sale_price && r.total_cost) ? Math.round(r.sale_price - r.total_cost) : 0),
           weight: r.weight || 0,
-          author: (r.author && r.author.trim()) ? r.author.trim() : (getCurrentUserIdentifier() || authorName),
+          author: (r.author && r.author.trim() && !["рабочее место", "пользователь", "менеджер 1", "google таблица"].includes(r.author.trim().toLowerCase())) ? r.author.trim() : authorLogin,
           parts_summary: r.parts_summary || ""
         }))
       };
