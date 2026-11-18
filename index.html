@@ -119,6 +119,73 @@
       font-weight: 700; 
     }
     
+    /* Kais Running Cat Easter Egg & Paw prints */
+    @keyframes kaisCatSprint {
+      0% {
+        right: -90px;
+        opacity: 0;
+      }
+      4% {
+        opacity: 1;
+      }
+      96% {
+        opacity: 1;
+      }
+      100% {
+        right: calc(100vw + 90px);
+        opacity: 0;
+      }
+    }
+
+    @keyframes kaisCatGallop {
+      0% {
+        transform: translateY(0px) rotate(0deg);
+      }
+      50% {
+        transform: translateY(-9px) rotate(-8deg);
+      }
+      100% {
+        transform: translateY(3px) rotate(5deg);
+      }
+    }
+
+    @keyframes kaisPawFade {
+      0% {
+        opacity: 0.8;
+        transform: scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: scale(0.6) translateY(-4px);
+      }
+    }
+
+    .kais-running-cat {
+      position: fixed;
+      bottom: 20px;
+      z-index: 99999;
+      pointer-events: none;
+      animation: kaisCatSprint 2.4s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+      display: flex;
+      align-items: center;
+    }
+
+    .kais-running-cat-body {
+      animation: kaisCatGallop 0.22s ease-in-out infinite alternate;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4));
+    }
+
+    .kais-paw-print {
+      position: fixed;
+      z-index: 99998;
+      pointer-events: none;
+      font-size: 14px;
+      line-height: 1;
+      color: var(--primary);
+      animation: kaisPawFade 1.2s ease-out forwards;
+      user-select: none;
+    }
+
     /* Kais Logo in Footer */
     .kais-logo {
       filter: invert(1) brightness(1.2);
@@ -1506,13 +1573,49 @@
 
   </main>
 
-  <!-- Site Credit Note with Kais Logo (Bottom Right, Seamless, Larger) -->
+  <!-- Site Credit Note with Kais Logo (Bottom Right, Interactive Easter Egg + Telegram QR) -->
   <footer class="w-full pb-8 pt-4 relative z-10 select-none">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-end">
-      <div class="flex items-center gap-3 text-sm sm:text-base text-muted hover:text-main opacity-80 hover:opacity-100 transition-all duration-300">
-        <img src="kais_logo.png" alt="Kais" class="kais-logo w-8 h-8 sm:w-9 sm:h-9 object-contain hover:scale-110 transition-transform duration-300">
-        <span>Сайт делал <strong class="text-main font-bold tracking-tight">Kais</strong></span>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-end relative">
+      
+      <!-- Popover QR Card (Hidden by default, smooth appearance) -->
+      <div id="kais-qr-popover" class="hidden absolute bottom-14 right-2 sm:right-4 z-50 bg-card text-main border border-card rounded-2xl p-4 shadow-2xl w-64 text-center transition-all duration-300 transform scale-95 opacity-0 select-none">
+        <!-- Header -->
+        <div class="flex items-center justify-between pb-2 mb-3 border-b border-card">
+          <div class="flex items-center gap-2 text-left">
+            <div class="w-7 h-7 rounded-lg bg-sky-500/15 flex items-center justify-center text-sky-400">
+              <i class="fa-brands fa-telegram text-base"></i>
+            </div>
+            <div>
+              <div class="text-xs font-bold text-main leading-none">Разработчик Kais</div>
+              <span class="text-[10px] text-muted font-mono">Telegram</span>
+            </div>
+          </div>
+          <button type="button" onclick="closeKaisQrPopover(event)" class="w-6 h-6 rounded-lg hover:bg-theme-light/40 flex items-center justify-center text-muted hover:text-main text-xs transition cursor-pointer">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <!-- Clean High-Contrast QR Code -->
+        <div class="bg-white p-2.5 rounded-xl shadow-inner inline-block mx-auto mb-3 border border-slate-200">
+          <img src="telegram_qr.svg" alt="QR Telegram @lalkasasaki" class="w-36 h-36 mx-auto block select-none" onerror="this.src='https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://t.me/lalkasasaki&format=svg'">
+        </div>
+
+        <!-- Action Link Button -->
+        <a href="https://t.me/lalkasasaki" target="_blank" rel="noopener noreferrer" class="w-full py-2 px-3 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-semibold text-xs shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer">
+          <i class="fa-brands fa-telegram text-sm"></i>
+          <span>@lalkasasaki</span>
+          <i class="fa-solid fa-arrow-up-right-from-square text-[10px] opacity-75 ml-0.5"></i>
+        </a>
+
+        <p class="text-[10px] text-muted mt-2">Наведите камеру смартфона для быстрого перехода</p>
       </div>
+
+      <!-- Footer Button / Credit -->
+      <button type="button" id="kais-credit-btn" onclick="toggleKaisEasterEgg(event)" title="Нажмите, чтобы запустить котика и открыть связь с Kais в Telegram" class="group flex items-center gap-2.5 text-sm sm:text-base text-muted hover:text-main opacity-80 hover:opacity-100 transition-all duration-300 cursor-pointer outline-none bg-transparent border-0 p-0">
+        <img src="kais_logo.png" alt="Kais" class="kais-logo w-8 h-8 sm:w-9 sm:h-9 object-contain group-hover:scale-115 transition-transform duration-300">
+        <span>Сайт делал <strong class="text-main font-bold tracking-tight group-hover:text-theme transition-colors">Kais</strong></span>
+      </button>
+
     </div>
   </footer>
 
@@ -7065,6 +7168,113 @@ ${aramidLines}
       }
       sendRecordsToGoogleSheet(list, true);
     }
-</script>
+
+    // ================= KAIS EASTER EGG: RUNNING CAT & TELEGRAM QR =================
+    let isKaisRunning = false;
+
+    function toggleKaisEasterEgg(e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      // 1. Toggle QR Code Popover
+      toggleKaisQrPopover();
+
+      // 2. Trigger running cat animation
+      triggerKaisRunningCat();
+    }
+
+    function toggleKaisQrPopover() {
+      const pop = document.getElementById("kais-qr-popover");
+      if (!pop) return;
+
+      const isHidden = pop.classList.contains("hidden");
+      if (isHidden) {
+        pop.classList.remove("hidden");
+        // Force reflow for smooth transition
+        pop.offsetHeight;
+        pop.classList.remove("scale-95", "opacity-0");
+        pop.classList.add("scale-100", "opacity-100");
+      } else {
+        closeKaisQrPopover();
+      }
+    }
+
+    function closeKaisQrPopover(e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      const pop = document.getElementById("kais-qr-popover");
+      if (!pop || pop.classList.contains("hidden")) return;
+
+      pop.classList.remove("scale-100", "opacity-100");
+      pop.classList.add("scale-95", "opacity-0");
+      setTimeout(() => {
+        pop.classList.add("hidden");
+      }, 250);
+    }
+
+    // Close QR Popover when clicking outside
+    document.addEventListener("click", (e) => {
+      const pop = document.getElementById("kais-qr-popover");
+      const btn = document.getElementById("kais-credit-btn");
+      if (!pop || pop.classList.contains("hidden")) return;
+      if (!pop.contains(e.target) && (!btn || !btn.contains(e.target))) {
+        closeKaisQrPopover();
+      }
+    });
+
+    // Running cat animation with paw prints (No sound as requested)
+    function triggerKaisRunningCat() {
+      if (isKaisRunning) return;
+      isKaisRunning = true;
+
+      const cat = document.createElement("div");
+      cat.className = "kais-running-cat";
+      cat.innerHTML = `
+        <div class="kais-running-cat-body flex items-center">
+          <img src="kais_logo.png" alt="Kais" class="kais-logo w-10 h-10 object-contain transform -scale-x-100">
+        </div>
+      `;
+      document.body.appendChild(cat);
+
+      const startTime = Date.now();
+      const duration = 2400; // ms
+      let pawStep = 0;
+
+      const pawInterval = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        if (elapsed >= duration || !cat.parentNode) {
+          clearInterval(pawInterval);
+          return;
+        }
+
+        const rect = cat.getBoundingClientRect();
+        if (rect.right > 0 && rect.left < window.innerWidth) {
+          const paw = document.createElement("div");
+          paw.className = "kais-paw-print";
+          paw.innerText = "🐾";
+          const yOffset = (pawStep % 2 === 0) ? -2 : 4;
+          paw.style.left = `${rect.right - 8}px`;
+          paw.style.bottom = `${24 + yOffset}px`;
+          document.body.appendChild(paw);
+          pawStep++;
+
+          setTimeout(() => {
+            if (paw.parentNode) paw.parentNode.removeChild(paw);
+          }, 1200);
+        }
+      }, 140);
+
+      setTimeout(() => {
+        clearInterval(pawInterval);
+        if (cat.parentNode) cat.parentNode.removeChild(cat);
+        isKaisRunning = false;
+      }, duration + 200);
+    }
+
+  </script>
 </body>
 </html>
